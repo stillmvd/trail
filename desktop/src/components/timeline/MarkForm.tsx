@@ -78,10 +78,6 @@ export function MarkForm({
 
   return (
     <form onSubmit={handleSubmit} className="flex min-h-full flex-1 flex-col gap-4">
-      <p className="text-[15px] leading-relaxed text-muted">
-        Быстрая отметка дня — выберите тип, без названия.
-      </p>
-
       <FormGroup title="Отметка" accent>
         <div className="flex flex-col gap-1.5">
           <SegmentedControl

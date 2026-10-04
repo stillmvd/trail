@@ -10,7 +10,7 @@ export function FormGroup({
   children: ReactNode;
 }) {
   return (
-    <section className="rounded-3xl border border-line p-4">
+    <section className="pt-2">
       <h3
         className={`mb-3 inline-block rounded-full px-3 py-1 text-[11px] font-medium uppercase tracking-[0.12em] ${
           accent ? "bg-amber text-ink" : "bg-surface-2 text-muted"
