@@ -44,6 +44,7 @@
   --color-surface-1: var(--rg-surface);
   --color-surface-2: var(--ds-surface-2);
   --color-surface-3: var(--ds-surface-3);
+  --color-surface-active: color-mix(in oklch, var(--ds-surface-3), var(--ds-text) 8%);
   --color-app-text: var(--rg-text);
   --color-line: var(--rg-line);
   --color-muted: var(--rg-muted);
@@ -569,4 +570,64 @@ h2 {
 *::-webkit-scrollbar-thumb:hover {
   background: color-mix(in srgb, var(--rg-muted) 70%, transparent);
   background-clip: padding-box;
+}
+
+/* Значимость «Созвездие»: при выборе звёзды загораются по очереди, у «Главного» по плитке проходит блик. */
+.tl-sig-play .tl-sig-star {
+  animation: tl-sig-pop 0.38s var(--rg-ease) both;
+  animation-delay: calc(var(--i) * 80ms);
+}
+
+.tl-sig-sweep {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+  background: linear-gradient(
+      100deg,
+      transparent 35%,
+      color-mix(in oklch, var(--ds-accent) 40%, transparent) 50%,
+      transparent 65%
+    )
+    no-repeat;
+  background-size: 250% 100%;
+}
+
+.tl-sig-play .tl-sig-sweep {
+  animation: tl-sig-sweep 0.8s var(--rg-ease) 0.3s;
+}
+
+@keyframes tl-sig-pop {
+  0% {
+    scale: 0;
+    opacity: 0;
+    rotate: -40deg;
+  }
+  60% {
+    scale: 1.25;
+    opacity: 1;
+  }
+  100% {
+    scale: 1;
+    rotate: 0deg;
+  }
+}
+
+@keyframes tl-sig-sweep {
+  from {
+    opacity: 1;
+    background-position: 150% 0;
+  }
+  to {
+    opacity: 1;
+    background-position: -50% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tl-sig-play .tl-sig-star,
+  .tl-sig-play .tl-sig-sweep {
+    animation: none;
+  }
 }

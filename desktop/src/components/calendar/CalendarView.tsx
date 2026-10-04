@@ -12,7 +12,7 @@ import {
 import { DayPicker, type DayProps, type MonthCaptionProps } from "react-day-picker";
 import { ru } from "date-fns/locale";
 import { parseISO, format, startOfMonth, endOfMonth, isSameMonth } from "date-fns";
-import { ChevronUp, ChevronDown, CalendarDays, Cake } from "lucide-react";
+import { CalendarDays, Cake } from "lucide-react";
 import "react-day-picker/style.css";
 import { onColorFor } from "@/lib/colors";
 import { eventAccent } from "@/lib/accent";
@@ -31,6 +31,7 @@ import { holidayName } from "@/lib/holidays";
 import { getNonWorkingISO } from "@/lib/workcalendar";
 import type { TimelineEvent } from "@/db/queries/events";
 import type { Mark } from "@/db/queries/marks";
+import { WheelField } from "@/components/ui/WheelField";
 import type { Person } from "@/db/queries/people";
 
 type Anchor = { x: number; y: number };
@@ -305,68 +306,6 @@ function DayCell({ day, modifiers, className, ...rest }: DayProps) {
         )}
       </div>
     </td>
-  );
-}
-
-// Поле «месяц»/«год»: колесо мыши = ±1 (вверх — назад, вниз — вперёд), шевроны кликабельны.
-function WheelField({
-  label,
-  ariaLabel,
-  isMonth,
-  onShift,
-}: {
-  label: string;
-  ariaLabel: string;
-  isMonth?: boolean;
-  onShift: (delta: number) => void;
-}) {
-  const ref = useRef<HTMLDivElement>(null);
-  const shiftRef = useRef(onShift);
-
-  useEffect(() => {
-    shiftRef.current = onShift;
-  });
-
-  // Нативный non-passive listener: React-овый onWheel passive, preventDefault в нём не работает.
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const onWheel = (e: WheelEvent) => {
-      e.preventDefault();
-      shiftRef.current(e.deltaY > 0 ? 1 : -1);
-    };
-    el.addEventListener("wheel", onWheel, { passive: false });
-    return () => el.removeEventListener("wheel", onWheel);
-  }, []);
-
-  return (
-    <div
-      ref={ref}
-      className={`tl-wheel${isMonth ? " is-month" : ""}`}
-      role="spinbutton"
-      aria-label={ariaLabel}
-      title="Прокрутите колёсиком"
-    >
-      <button
-        type="button"
-        tabIndex={-1}
-        aria-label="Назад"
-        className="tl-wheel-chev"
-        onClick={() => onShift(-1)}
-      >
-        <ChevronUp size={13} strokeWidth={1.75} />
-      </button>
-      <span className="tl-wheel-val">{label}</span>
-      <button
-        type="button"
-        tabIndex={-1}
-        aria-label="Вперёд"
-        className="tl-wheel-chev"
-        onClick={() => onShift(1)}
-      >
-        <ChevronDown size={13} strokeWidth={1.75} />
-      </button>
-    </div>
   );
 }
 

@@ -1,29 +1,20 @@
 import { createElement, useState } from "react";
-import { ImageIcon, LoaderCircle, Sparkles, Target } from "lucide-react";
+import { ImageIcon, LoaderCircle, Plus, Sparkles, Target } from "lucide-react";
 import type { CategoryNode } from "@/db/queries/categories";
 import type { EventMedia } from "@/db/queries/media";
-import {
-  SIGNIFICANCE_VALUES,
-  TIMELINE_MIN_DATE,
-  TIMELINE_MAX_DATE,
-  isValidISODate,
-  type Significance,
-} from "@/lib/constants";
-import { getSignificanceMeta } from "@/lib/significance";
+import { TIMELINE_MIN_DATE, TIMELINE_MAX_DATE, isValidISODate, type Significance } from "@/lib/constants";
 import { todayISO } from "@/lib/dates";
-import { Input } from "@/components/ui/Input";
 import { DatePicker } from "@/components/ui/DatePicker";
-import { Textarea } from "@/components/ui/Textarea";
-import { Select, type SelectOption } from "@/components/ui/Select";
-import { SegmentedControl } from "@/components/ui/SegmentedControl";
+import { TextPair } from "@/components/ui/TextPair";
 import { SheetHeaderAction } from "@/components/ui/SideSheet";
-import { SignificanceIcon } from "@/components/ui/SignificanceIcon";
 import { Button } from "@/components/ui/Button";
 import { FormGroup } from "@/components/ui/FormGroup";
 import { PhotoPicker, usePhotoState, type PhotoChange } from "@/components/ui/PhotoPicker";
 import { useToast } from "@/components/ui/Toast";
 import { resolveIconOrNull } from "@/lib/icons";
 import { generateEventImage } from "@/lib/imageGen";
+import { CategoryPicker } from "./CategoryPicker";
+import { SignificancePicker } from "./SignificancePicker";
 
 export interface EventFormValues {
   title: string;
@@ -58,11 +49,6 @@ interface EventFormProps {
   onDelete?: () => void;
 }
 
-const kindSegments: { value: "point" | "period"; label: string }[] = [
-  { value: "point", label: "Момент" },
-  { value: "period", label: "Период" },
-];
-
 export function EventForm({
   categories,
   initial,
@@ -76,8 +62,9 @@ export function EventForm({
   const [title, setTitle] = useState(initial?.title ?? "");
   const [description, setDescription] = useState(initial?.description ?? "");
   const [date, setDate] = useState(initial?.date ?? todayISO());
-  const [kind, setKind] = useState<"point" | "period">(initial?.endDate != null ? "period" : "point");
   const [endDate, setEndDate] = useState<string>(initial?.endDate ?? "");
+  const [endAdded, setEndAdded] = useState(false);
+  const isPeriod = endDate !== "";
   const [significance, setSignificance] = useState<Significance>(initial?.significance ?? 1);
   const [categoryId, setCategoryId] = useState<number | null>(initial?.categoryId ?? null);
   const [subcategoryId, setSubcategoryId] = useState<number | null>(initial?.subcategoryId ?? null);
@@ -102,36 +89,9 @@ export function EventForm({
     }
   }
 
-  function handleKindChange(next: "point" | "period") {
-    setKind(next);
-    if (next === "period" && !endDate) setEndDate(date);
-  }
-
   const selectedCategory = categories.find((c) => c.id === categoryId) ?? null;
   const selectedSub = selectedCategory?.children.find((c) => c.id === subcategoryId) ?? null;
   const CategoryIcon = resolveIconOrNull(selectedSub?.icon ?? selectedCategory?.icon);
-  const subOptions: SelectOption[] = (selectedCategory?.children ?? []).map((c) => ({
-    value: String(c.id),
-    label: c.name,
-    icon: c.icon,
-    color: c.color,
-  }));
-
-  const categoryOptions: SelectOption[] = [
-    { value: "", label: "Без категории" },
-    ...categories.map((c) => ({
-      value: String(c.id),
-      label: c.name,
-      icon: c.icon,
-      color: c.color,
-    })),
-  ];
-
-  function handleCategoryChange(value: string) {
-    setCategoryId(value ? Number(value) : null);
-    setSubcategoryId(null);
-  }
-
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     let valid = true;
@@ -153,7 +113,7 @@ export function EventForm({
       setDateError(undefined);
     }
 
-    if (kind === "period") {
+    if (isPeriod) {
       if (!isValidISODate(endDate)) {
         setEndDateError("Некорректная дата");
         valid = false;
@@ -176,7 +136,7 @@ export function EventForm({
       title: title.trim(),
       description: description.trim(),
       date,
-      endDate: kind === "period" ? endDate : null,
+      endDate: isPeriod ? endDate : null,
       significance,
       categoryId: subcategoryId ?? categoryId,
       track,
@@ -224,102 +184,91 @@ export function EventForm({
           }
         />
 
-        <div className="relative">
-          <Input
-            value={title}
-            onChange={setTitle}
-            error={titleError}
-            autoFocus
-            placeholder="Что произошло?"
-            className={photo.src ? "" : "pr-12"}
-          />
-          {!photo.src && (
-            <button
-              type="button"
-              onClick={handleGenerate}
-              disabled={!title.trim() || generating}
-              title="Сгенерировать картинку по названию и деталям"
-              aria-label="Сгенерировать картинку"
-              className="absolute right-1.5 top-1.5 grid h-8 w-8 cursor-pointer place-items-center rounded-full bg-surface-3 text-muted transition-[background-color,color,scale] duration-150 ease-[var(--rg-ease)] hover:bg-amber hover:text-ink active:scale-[0.96] disabled:pointer-events-none disabled:opacity-40"
-            >
-              {generating ? (
-                <LoaderCircle size={16} strokeWidth={1.75} className="animate-spin" />
-              ) : (
-                <Sparkles size={16} strokeWidth={1.75} />
-              )}
-            </button>
-          )}
-        </div>
-
-        <Textarea
-          value={description}
-          onChange={setDescription}
-          placeholder="Детали (необязательно)"
+        <TextPair
+          title={title}
+          onTitleChange={setTitle}
+          titlePlaceholder="Что произошло?"
+          titleError={titleError}
+          note={description}
+          onNoteChange={setDescription}
+          notePlaceholder="Детали (необязательно)"
+          autoFocus
+          action={
+            !photo.src &&
+            title.trim() && (
+              <button
+                type="button"
+                onClick={handleGenerate}
+                disabled={generating}
+                title="Сгенерировать картинку по названию и деталям"
+                aria-label="Сгенерировать картинку"
+                className="grid h-8 w-8 cursor-pointer place-items-center rounded-full bg-surface-3 text-muted transition-[background-color,color,scale] duration-150 ease-[var(--rg-ease)] hover:bg-amber hover:text-ink active:scale-[0.96] disabled:pointer-events-none disabled:opacity-40"
+              >
+                {generating ? (
+                  <LoaderCircle size={16} strokeWidth={1.75} className="animate-spin" />
+                ) : (
+                  <Sparkles size={16} strokeWidth={1.75} />
+                )}
+              </button>
+            )
+          }
         />
       </FormGroup>
 
-      <FormGroup>
-        <SegmentedControl segments={kindSegments} value={kind} onChange={handleKindChange} />
-
-        <div className={kind === "period" ? "grid grid-cols-2 gap-2" : ""}>
+      <div className="grid grid-cols-2 gap-0.5">
+        <DatePicker
+          variant="tile"
+          className="rounded-l-3xl rounded-r-xs"
+          value={date}
+          onChange={setDate}
+          error={dateError}
+          min={TIMELINE_MIN_DATE}
+          max={TIMELINE_MAX_DATE}
+        />
+        {isPeriod ? (
           <DatePicker
-            value={date}
-            onChange={setDate}
-            error={dateError}
-            min={TIMELINE_MIN_DATE}
+            variant="tile"
+            className="rounded-l-xs rounded-r-3xl"
+            align="end"
+            defaultOpen={endAdded}
+            value={endDate}
+            onChange={setEndDate}
+            error={endDateError}
+            min={date}
             max={TIMELINE_MAX_DATE}
+            onClear={() => {
+              setEndDate("");
+              setEndAdded(false);
+              setEndDateError(undefined);
+            }}
           />
-          {kind === "period" && (
-            <DatePicker
-              value={endDate}
-              onChange={setEndDate}
-              error={endDateError}
-              min={date}
-              max={TIMELINE_MAX_DATE}
-            />
-          )}
-        </div>
-      </FormGroup>
+        ) : (
+          <button
+            type="button"
+            onClick={() => {
+              setEndDate(date);
+              setEndAdded(true);
+            }}
+            className="flex h-16 cursor-pointer items-center justify-center gap-2 rounded-l-xs rounded-r-3xl bg-surface-2 text-sm font-medium text-muted transition-[background-color,color] duration-150 ease-[var(--rg-ease)] hover:bg-surface-3 hover:text-app-text"
+          >
+            <Plus size={16} strokeWidth={1.75} />
+            Конец
+          </button>
+        )}
+      </div>
 
       <FormGroup>
-        <div className="grid grid-cols-3 gap-2" role="radiogroup" aria-label="Значимость">
-          {SIGNIFICANCE_VALUES.map((v) => {
-            const active = v === significance;
-            return (
-              <button
-                key={v}
-                type="button"
-                role="radio"
-                aria-checked={active}
-                onClick={() => setSignificance(v as Significance)}
-                className={`flex cursor-pointer flex-col items-center justify-center gap-1.5 rounded-3xl py-3 text-[13px] font-medium transition-[background-color,color,scale] duration-150 ease-[var(--rg-ease)] active:scale-[0.96] ${
-                  active ? "bg-surface-3 text-accent-ink" : "bg-surface-2 text-muted hover:bg-surface-3 hover:text-app-text"
-                }`}
-              >
-                <SignificanceIcon level={v as Significance} size={20} />
-                {getSignificanceMeta(v).label}
-              </button>
-            );
-          })}
-        </div>
+        <SignificancePicker value={significance} onChange={setSignificance} />
 
-        <div className={subOptions.length > 0 ? "grid grid-cols-2 gap-2" : ""}>
-          <Select
-            options={categoryOptions}
-            value={categoryId !== null ? String(categoryId) : ""}
-            onChange={handleCategoryChange}
-            placeholder="Без категории"
-          />
-          {subOptions.length > 0 && (
-            <Select
-              options={[{ value: "", label: "Без подкатегории" }, ...subOptions]}
-              value={subcategoryId !== null ? String(subcategoryId) : ""}
-              onChange={(v) => setSubcategoryId(v ? Number(v) : null)}
-              placeholder="Без подкатегории"
-            />
-          )}
-        </div>
-
+        <CategoryPicker
+          categories={categories}
+          categoryId={categoryId}
+          subcategoryId={subcategoryId}
+          onChange={(cat, sub) => {
+            setCategoryId(cat);
+            setSubcategoryId(sub);
+          }}
+        />
       </FormGroup>
 
       <div className="mt-auto flex items-center justify-between gap-2">

@@ -89,6 +89,8 @@ export function MarkForm({
         </div>
 
         <DatePicker
+          variant="tile"
+          className="rounded-3xl"
           value={date}
           onChange={setDate}
           error={dateError}

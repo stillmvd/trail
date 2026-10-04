@@ -6,6 +6,11 @@ import { X } from "lucide-react";
 const SHEET_WIDTH = 430;
 
 const HeaderSlotContext = createContext<HTMLElement | null>(null);
+const OverlayContext = createContext<HTMLElement | null>(null);
+
+export function useSheetOverlay() {
+  return useContext(OverlayContext);
+}
 
 export function SheetHeaderAction({ children }: { children: ReactNode }) {
   const slot = useContext(HeaderSlotContext);
@@ -24,6 +29,7 @@ export function SideSheet({
   children: ReactNode;
 }) {
   const [slot, setSlot] = useState<HTMLElement | null>(null);
+  const [overlay, setOverlay] = useState<HTMLElement | null>(null);
 
   useEffect(() => {
     if (!open) return;
@@ -69,8 +75,11 @@ export function SideSheet({
               </button>
             </header>
             <div className="min-h-0 flex-1 overflow-y-auto px-7 pb-7 [scrollbar-gutter:stable]">
-              <HeaderSlotContext.Provider value={slot}>{children}</HeaderSlotContext.Provider>
+              <HeaderSlotContext.Provider value={slot}>
+                <OverlayContext.Provider value={overlay}>{children}</OverlayContext.Provider>
+              </HeaderSlotContext.Provider>
             </div>
+            <div ref={setOverlay} className="pointer-events-none absolute inset-0 overflow-hidden rounded-l-4xl" />
           </motion.aside>
         </>
       )}

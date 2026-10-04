@@ -3,7 +3,7 @@ import { TIMELINE_MIN_DATE, TIMELINE_MAX_DATE, isValidISODate } from "@/lib/cons
 import { todayISO } from "@/lib/dates";
 import { REPEAT_OPTIONS, type RepeatKind, type RepeatUnit } from "@/lib/reminders";
 import { Input } from "@/components/ui/Input";
-import { Textarea } from "@/components/ui/Textarea";
+import { TextPair } from "@/components/ui/TextPair";
 import { DatePicker } from "@/components/ui/DatePicker";
 import { TimePicker } from "@/components/ui/TimePicker";
 import { Select } from "@/components/ui/Select";
@@ -114,17 +114,16 @@ export function ReminderForm({
 
   return (
     <form onSubmit={handleSubmit} className="flex min-h-full flex-col gap-7">
-      <FormGroup>
-        <Input
-          value={title}
-          onChange={setTitle}
-          error={titleError}
-          autoFocus
-          placeholder="О чём напомнить?"
-        />
-
-        <Textarea value={note} onChange={setNote} placeholder="Заметка (необязательно)" />
-      </FormGroup>
+      <TextPair
+        title={title}
+        onTitleChange={setTitle}
+        titlePlaceholder="О чём напомнить?"
+        titleError={titleError}
+        note={note}
+        onNoteChange={setNote}
+        notePlaceholder="Заметка (необязательно)"
+        autoFocus
+      />
 
       <FormGroup>
         <div className="grid grid-cols-[1fr_auto] items-end gap-2">
