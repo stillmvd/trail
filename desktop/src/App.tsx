@@ -1,4 +1,4 @@
-import type { ComponentType } from "react";
+import { lazy, Suspense, type ComponentType } from "react";
 import { Titlebar } from "./components/Titlebar";
 import { NavigationRail } from "./components/nav/NavigationRail";
 import { ToastProvider } from "./components/ui/Toast";
@@ -30,6 +30,10 @@ const PAGES: Record<ViewMode, ComponentType> = {
   settings: SettingsPage,
 };
 
+const Agentation = import.meta.env.DEV
+  ? lazy(() => import("agentation").then((m) => ({ default: m.Agentation })))
+  : null;
+
 export default function App() {
   useApplyTheme();
   useCloseToTray();
@@ -54,6 +58,11 @@ export default function App() {
             </div>
             <SearchHost />
             <UpdateWatcher />
+            {Agentation && (
+              <Suspense>
+                <Agentation appName="Trail" endpoint="http://localhost:4747" />
+              </Suspense>
+            )}
           </PeopleProvider>
         </EventsProvider>
       </RemindersProvider>
