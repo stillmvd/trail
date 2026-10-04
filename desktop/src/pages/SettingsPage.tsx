@@ -13,6 +13,7 @@ import { CategoryManager } from "@/components/settings/CategoryManager";
 import { MarkTypeManager } from "@/components/settings/MarkTypeManager";
 import { BackupPanel } from "@/components/settings/BackupPanel";
 import { UpdatePanel } from "@/components/settings/UpdatePanel";
+import { ImageGenPanel } from "@/components/settings/ImageGenPanel";
 import { useLiveSeconds, setLiveSeconds } from "@/components/birthdays/useLiveSeconds";
 import { themeStore, type ThemePref } from "@/lib/theme";
 import { closeToTrayStore } from "@/lib/behavior";
@@ -170,6 +171,13 @@ export function SettingsPage() {
               label="Живой отсчёт секунд"
             />
           </Row>
+        </Section>
+
+        <Section
+          title="Картинки"
+          description="Иллюстрация к событию по названию и заметке. Сцену придумывает бесплатная модель OpenRouter, Cloudflare или локальная LM Studio — что доступно."
+        >
+          <ImageGenPanel />
         </Section>
 
         <Section title="Обновления" description="Новые версии приходят с GitHub.">

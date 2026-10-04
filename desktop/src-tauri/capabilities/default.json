@@ -23,6 +23,15 @@
       "allow": [{ "path": "**" }]
     },
     "sql:default",
-    "sql:allow-execute"
+    "sql:allow-execute",
+    {
+      "identifier": "http:default",
+      "allow": [
+        { "url": "https://api.cloudflare.com/*" },
+        { "url": "https://openrouter.ai/*" },
+        { "url": "http://127.0.0.1:*/*" },
+        { "url": "http://localhost:*/*" }
+      ]
+    }
   ]
 }

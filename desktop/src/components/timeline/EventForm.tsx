@@ -1,5 +1,5 @@
 import { createElement, useState } from "react";
-import { ImageIcon, Target } from "lucide-react";
+import { ImageIcon, LoaderCircle, Sparkles, Target } from "lucide-react";
 import type { CategoryNode } from "@/db/queries/categories";
 import type { EventMedia } from "@/db/queries/media";
 import {
@@ -20,7 +20,9 @@ import { SignificanceIcon } from "@/components/ui/SignificanceIcon";
 import { Button } from "@/components/ui/Button";
 import { FormGroup } from "@/components/ui/FormGroup";
 import { PhotoPicker, usePhotoState, type PhotoChange } from "@/components/ui/PhotoPicker";
+import { useToast } from "@/components/ui/Toast";
 import { resolveIconOrNull } from "@/lib/icons";
+import { generateEventImage } from "@/lib/imageGen";
 
 export interface EventFormValues {
   title: string;
@@ -91,6 +93,19 @@ export function EventForm({
   const [endDateError, setEndDateError] = useState<string>();
 
   const photo = usePhotoState(initialMedia?.[0]?.path);
+  const [generating, setGenerating] = useState(false);
+  const { show } = useToast();
+
+  async function handleGenerate() {
+    setGenerating(true);
+    try {
+      photo.pick([await generateEventImage(title, description)]);
+    } catch (e) {
+      show(e instanceof Error ? e.message : String(e), "error");
+    } finally {
+      setGenerating(false);
+    }
+  }
 
   function handleKindChange(next: "point" | "period") {
     setKind(next);
@@ -181,7 +196,9 @@ export function EventForm({
         onPick={photo.pick}
         onClear={photo.clear}
         placeholder={
-          CategoryIcon ? (
+          generating ? (
+            <LoaderCircle size={44} strokeWidth={1.5} className="animate-spin" />
+          ) : CategoryIcon ? (
             createElement(CategoryIcon, { size: 44, strokeWidth: 1.5 })
           ) : (
             <ImageIcon size={44} strokeWidth={1.5} />
@@ -189,13 +206,32 @@ export function EventForm({
         }
       />
 
-      <Input
-        value={title}
-        onChange={setTitle}
-        error={titleError}
-        autoFocus
-        placeholder="Что произошло?"
-      />
+      <div className="relative">
+        <Input
+          value={title}
+          onChange={setTitle}
+          error={titleError}
+          autoFocus
+          placeholder="Что произошло?"
+          className={photo.src ? "" : "pr-12"}
+        />
+        {!photo.src && (
+          <button
+            type="button"
+            onClick={handleGenerate}
+            disabled={!title.trim() || generating}
+            title="Сгенерировать картинку по названию и деталям"
+            aria-label="Сгенерировать картинку"
+            className="absolute right-1.5 top-1.5 grid h-8 w-8 place-items-center rounded-full bg-surface-3 text-muted transition hover:text-app-text active:scale-[0.96] disabled:pointer-events-none disabled:opacity-40"
+          >
+            {generating ? (
+              <LoaderCircle size={16} strokeWidth={1.75} className="animate-spin" />
+            ) : (
+              <Sparkles size={16} strokeWidth={1.75} />
+            )}
+          </button>
+        )}
+      </div>
 
       <Textarea
         value={description}
