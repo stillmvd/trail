@@ -85,21 +85,23 @@ export function PersonForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex min-h-full flex-col gap-4">
-      <PhotoPicker
-        src={photo.src}
-        onPick={photo.pick}
-        onClear={photo.clear}
-        placeholder={<Cake size={44} strokeWidth={1.5} />}
-      />
+    <form onSubmit={handleSubmit} className="flex min-h-full flex-col gap-7">
+      <FormGroup>
+        <PhotoPicker
+          src={photo.src}
+          onPick={photo.pick}
+          onClear={photo.clear}
+          placeholder={<Cake size={44} strokeWidth={1.5} />}
+        />
 
-      <Input
-        value={name}
-        onChange={setName}
-        error={nameError}
-        autoFocus
-        placeholder="Кого добавляем?"
-      />
+        <Input
+          value={name}
+          onChange={setName}
+          error={nameError}
+          autoFocus
+          placeholder="Кого добавляем?"
+        />
+      </FormGroup>
 
       <FormGroup>
         <SegmentedControl
@@ -122,7 +124,7 @@ export function PersonForm({
         />
       </FormGroup>
 
-      <div className="mt-auto flex items-center justify-between gap-2 pt-4">
+      <div className="mt-auto flex items-center justify-between gap-2">
         {onDelete ? (
           <Button type="button" variant="danger" onClick={onDelete} disabled={submitting}>
             Удалить

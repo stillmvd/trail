@@ -16,7 +16,7 @@ import { DatePicker } from "@/components/ui/DatePicker";
 import { Textarea } from "@/components/ui/Textarea";
 import { Select, type SelectOption } from "@/components/ui/Select";
 import { SegmentedControl } from "@/components/ui/SegmentedControl";
-import { Switch } from "@/components/ui/Switch";
+import { SheetHeaderAction } from "@/components/ui/SideSheet";
 import { SignificanceIcon } from "@/components/ui/SignificanceIcon";
 import { Button } from "@/components/ui/Button";
 import { FormGroup } from "@/components/ui/FormGroup";
@@ -185,54 +185,78 @@ export function EventForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex min-h-full flex-1 flex-col gap-4">
-      <PhotoPicker
-        src={photo.src}
-        onPick={photo.pick}
-        onClear={photo.clear}
-        placeholder={
-          generating ? (
-            <LoaderCircle size={44} strokeWidth={1.5} className="animate-spin" />
-          ) : CategoryIcon ? (
-            createElement(CategoryIcon, { size: 44, strokeWidth: 1.5 })
-          ) : (
-            <ImageIcon size={44} strokeWidth={1.5} />
-          )
-        }
-      />
-
-      <div className="relative">
-        <Input
-          value={title}
-          onChange={setTitle}
-          error={titleError}
-          autoFocus
-          placeholder="Что произошло?"
-          className={photo.src ? "" : "pr-12"}
-        />
-        {!photo.src && (
+    <form onSubmit={handleSubmit} className="flex min-h-full flex-1 flex-col gap-7">
+      <SheetHeaderAction>
+        <span className="group relative">
           <button
             type="button"
-            onClick={handleGenerate}
-            disabled={!title.trim() || generating}
-            title="Сгенерировать картинку по названию и деталям"
-            aria-label="Сгенерировать картинку"
-            className="absolute right-1.5 top-1.5 grid h-8 w-8 cursor-pointer place-items-center rounded-full bg-surface-3 text-muted transition-[background-color,color,scale] duration-150 ease-[var(--rg-ease)] hover:bg-amber hover:text-ink active:scale-[0.96] disabled:pointer-events-none disabled:opacity-40"
+            aria-pressed={track}
+            aria-label="Отслеживать"
+            onClick={() => setTrack(!track)}
+            className={`grid h-10 w-10 cursor-pointer place-items-center rounded-full transition-[background-color,color,scale] duration-150 ease-[var(--rg-ease)] active:scale-[0.96] ${
+              track ? "bg-amber text-ink" : "bg-surface-2 text-muted hover:bg-surface-3 hover:text-app-text"
+            }`}
           >
-            {generating ? (
-              <LoaderCircle size={16} strokeWidth={1.75} className="animate-spin" />
-            ) : (
-              <Sparkles size={16} strokeWidth={1.75} />
-            )}
+            <Target size={20} strokeWidth={1.75} />
           </button>
-        )}
-      </div>
+          <span
+            role="tooltip"
+            className="pointer-events-none absolute right-0 top-full z-30 mt-2 w-max max-w-[240px] -translate-y-1 rounded-2xl bg-surface-3 px-3.5 py-2 text-[13px] text-app-text opacity-0 shadow-lg transition-[opacity,transform] delay-0 duration-150 ease-[var(--rg-ease)] group-hover:translate-y-0 group-hover:opacity-100 group-hover:delay-500"
+          >
+            {track ? "Отслеживается в разделе «Отслеживание»" : "Отслеживать в разделе «Отслеживание»"}
+          </span>
+        </span>
+      </SheetHeaderAction>
 
-      <Textarea
-        value={description}
-        onChange={setDescription}
-        placeholder="Детали (необязательно)"
-      />
+      <FormGroup>
+        <PhotoPicker
+          src={photo.src}
+          onPick={photo.pick}
+          onClear={photo.clear}
+          placeholder={
+            generating ? (
+              <LoaderCircle size={44} strokeWidth={1.5} className="animate-spin" />
+            ) : CategoryIcon ? (
+              createElement(CategoryIcon, { size: 44, strokeWidth: 1.5 })
+            ) : (
+              <ImageIcon size={44} strokeWidth={1.5} />
+            )
+          }
+        />
+
+        <div className="relative">
+          <Input
+            value={title}
+            onChange={setTitle}
+            error={titleError}
+            autoFocus
+            placeholder="Что произошло?"
+            className={photo.src ? "" : "pr-12"}
+          />
+          {!photo.src && (
+            <button
+              type="button"
+              onClick={handleGenerate}
+              disabled={!title.trim() || generating}
+              title="Сгенерировать картинку по названию и деталям"
+              aria-label="Сгенерировать картинку"
+              className="absolute right-1.5 top-1.5 grid h-8 w-8 cursor-pointer place-items-center rounded-full bg-surface-3 text-muted transition-[background-color,color,scale] duration-150 ease-[var(--rg-ease)] hover:bg-amber hover:text-ink active:scale-[0.96] disabled:pointer-events-none disabled:opacity-40"
+            >
+              {generating ? (
+                <LoaderCircle size={16} strokeWidth={1.75} className="animate-spin" />
+              ) : (
+                <Sparkles size={16} strokeWidth={1.75} />
+              )}
+            </button>
+          )}
+        </div>
+
+        <Textarea
+          value={description}
+          onChange={setDescription}
+          placeholder="Детали (необязательно)"
+        />
+      </FormGroup>
 
       <FormGroup>
         <SegmentedControl segments={kindSegments} value={kind} onChange={handleKindChange} />
@@ -296,16 +320,9 @@ export function EventForm({
           )}
         </div>
 
-        <label className="flex h-11 cursor-pointer items-center justify-between gap-3 rounded-full bg-surface-2 pl-4 pr-2 text-sm">
-          <span className="flex items-center gap-2">
-            <Target size={16} strokeWidth={1.75} className="text-muted" />
-            Отслеживать
-          </span>
-          <Switch checked={track} onChange={setTrack} label="Отслеживать" />
-        </label>
       </FormGroup>
 
-      <div className="mt-auto flex items-center justify-between gap-2 pt-4">
+      <div className="mt-auto flex items-center justify-between gap-2">
         {onDelete ? (
           <Button type="button" variant="danger" onClick={onDelete} disabled={submitting}>
             Удалить

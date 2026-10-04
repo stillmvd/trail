@@ -1,9 +1,16 @@
-import { useEffect, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "motion/react";
 import { X } from "lucide-react";
 
 const SHEET_WIDTH = 430;
+
+const HeaderSlotContext = createContext<HTMLElement | null>(null);
+
+export function SheetHeaderAction({ children }: { children: ReactNode }) {
+  const slot = useContext(HeaderSlotContext);
+  return slot ? createPortal(children, slot) : null;
+}
 
 export function SideSheet({
   open,
@@ -16,6 +23,8 @@ export function SideSheet({
   title?: ReactNode;
   children: ReactNode;
 }) {
+  const [slot, setSlot] = useState<HTMLElement | null>(null);
+
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
@@ -49,6 +58,7 @@ export function SideSheet({
           >
             <header className="flex shrink-0 items-center justify-between gap-3 px-7 pb-3 pt-6">
               <h2 className="text-xl font-bold tracking-tight text-app-text">{title}</h2>
+              <div ref={setSlot} className="ml-auto flex items-center gap-2" />
               <button
                 type="button"
                 aria-label="Закрыть"
@@ -58,7 +68,9 @@ export function SideSheet({
                 <X size={20} strokeWidth={1.75} />
               </button>
             </header>
-            <div className="min-h-0 flex-1 overflow-y-auto px-7 pb-7 [scrollbar-gutter:stable]">{children}</div>
+            <div className="min-h-0 flex-1 overflow-y-auto px-7 pb-7 [scrollbar-gutter:stable]">
+              <HeaderSlotContext.Provider value={slot}>{children}</HeaderSlotContext.Provider>
+            </div>
           </motion.aside>
         </>
       )}

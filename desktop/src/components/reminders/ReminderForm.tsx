@@ -113,16 +113,18 @@ export function ReminderForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex min-h-full flex-col gap-4">
-      <Input
-        value={title}
-        onChange={setTitle}
-        error={titleError}
-        autoFocus
-        placeholder="О чём напомнить?"
-      />
+    <form onSubmit={handleSubmit} className="flex min-h-full flex-col gap-7">
+      <FormGroup>
+        <Input
+          value={title}
+          onChange={setTitle}
+          error={titleError}
+          autoFocus
+          placeholder="О чём напомнить?"
+        />
 
-      <Textarea value={note} onChange={setNote} placeholder="Заметка (необязательно)" />
+        <Textarea value={note} onChange={setNote} placeholder="Заметка (необязательно)" />
+      </FormGroup>
 
       <FormGroup>
         <div className="grid grid-cols-[1fr_auto] items-end gap-2">
@@ -208,7 +210,7 @@ export function ReminderForm({
         <IconPicker value={icon} onChange={setIcon} color={color} />
       </FormGroup>
 
-      <div className="mt-auto flex items-center justify-between gap-2 pt-4">
+      <div className="mt-auto flex items-center justify-between gap-2">
         {onDelete ? (
           <Button type="button" variant="danger" onClick={onDelete}>
             Удалить
