@@ -78,10 +78,9 @@ export function MarkForm({
 
   return (
     <form onSubmit={handleSubmit} className="flex min-h-full flex-1 flex-col gap-4">
-      <FormGroup title="Отметка" accent>
+      <FormGroup>
         <div className="flex flex-col gap-1.5">
           <SegmentedControl
-            label="Тип"
             segments={segments}
             value={markTypeId !== null ? String(markTypeId) : ""}
             onChange={(v) => setMarkTypeId(Number(v))}
@@ -90,7 +89,6 @@ export function MarkForm({
         </div>
 
         <DatePicker
-          label="Дата"
           value={date}
           onChange={setDate}
           error={dateError}

@@ -16,6 +16,7 @@ import { DatePicker } from "@/components/ui/DatePicker";
 import { Textarea } from "@/components/ui/Textarea";
 import { Select, type SelectOption } from "@/components/ui/Select";
 import { SegmentedControl } from "@/components/ui/SegmentedControl";
+import { Switch } from "@/components/ui/Switch";
 import { SignificanceIcon } from "@/components/ui/SignificanceIcon";
 import { Button } from "@/components/ui/Button";
 import { FormGroup } from "@/components/ui/FormGroup";
@@ -56,12 +57,6 @@ interface EventFormProps {
   onCancel: () => void;
   onDelete?: () => void;
 }
-
-const sigSegments = SIGNIFICANCE_VALUES.map((v) => ({
-  value: String(v),
-  label: getSignificanceMeta(v).label,
-  icon: <SignificanceIcon level={v as Significance} size={16} />,
-}));
 
 const kindSegments: { value: "point" | "period"; label: string }[] = [
   { value: "point", label: "Момент" },
@@ -222,7 +217,7 @@ export function EventForm({
             disabled={!title.trim() || generating}
             title="Сгенерировать картинку по названию и деталям"
             aria-label="Сгенерировать картинку"
-            className="absolute right-1.5 top-1.5 grid h-8 w-8 place-items-center rounded-full bg-surface-3 text-muted transition hover:text-app-text active:scale-[0.96] disabled:pointer-events-none disabled:opacity-40"
+            className="absolute right-1.5 top-1.5 grid h-8 w-8 cursor-pointer place-items-center rounded-full bg-surface-3 text-muted transition-[background-color,color,scale] duration-150 ease-[var(--rg-ease)] hover:bg-amber hover:text-ink active:scale-[0.96] disabled:pointer-events-none disabled:opacity-40"
           >
             {generating ? (
               <LoaderCircle size={16} strokeWidth={1.75} className="animate-spin" />
@@ -239,70 +234,75 @@ export function EventForm({
         placeholder="Детали (необязательно)"
       />
 
-      <FormGroup title="Когда" accent>
-        <SegmentedControl
-          label="Длительность"
-          segments={kindSegments}
-          value={kind}
-          onChange={handleKindChange}
-        />
+      <FormGroup>
+        <SegmentedControl segments={kindSegments} value={kind} onChange={handleKindChange} />
 
-        <DatePicker
-          label={kind === "period" ? "Начало" : "Дата"}
-          value={date}
-          onChange={setDate}
-          error={dateError}
-          min={TIMELINE_MIN_DATE}
-          max={TIMELINE_MAX_DATE}
-        />
-
-        {kind === "period" && (
+        <div className={kind === "period" ? "grid grid-cols-2 gap-2" : ""}>
           <DatePicker
-            label="Конец"
-            value={endDate}
-            onChange={setEndDate}
-            error={endDateError}
-            min={date}
+            value={date}
+            onChange={setDate}
+            error={dateError}
+            min={TIMELINE_MIN_DATE}
             max={TIMELINE_MAX_DATE}
           />
-        )}
+          {kind === "period" && (
+            <DatePicker
+              value={endDate}
+              onChange={setEndDate}
+              error={endDateError}
+              min={date}
+              max={TIMELINE_MAX_DATE}
+            />
+          )}
+        </div>
       </FormGroup>
 
-      <FormGroup title="Вид">
-        <SegmentedControl
-          label="Значимость"
-          segments={sigSegments}
-          value={String(significance)}
-          onChange={(v) => setSignificance(Number(v) as Significance)}
-        />
+      <FormGroup>
+        <div className="grid grid-cols-3 gap-2" role="radiogroup" aria-label="Значимость">
+          {SIGNIFICANCE_VALUES.map((v) => {
+            const active = v === significance;
+            return (
+              <button
+                key={v}
+                type="button"
+                role="radio"
+                aria-checked={active}
+                onClick={() => setSignificance(v as Significance)}
+                className={`flex cursor-pointer flex-col items-center justify-center gap-1.5 rounded-3xl py-3 text-[13px] font-medium transition-[background-color,color,scale] duration-150 ease-[var(--rg-ease)] active:scale-[0.96] ${
+                  active ? "bg-surface-3 text-accent-ink" : "bg-surface-2 text-muted hover:bg-surface-3 hover:text-app-text"
+                }`}
+              >
+                <SignificanceIcon level={v as Significance} size={20} />
+                {getSignificanceMeta(v).label}
+              </button>
+            );
+          })}
+        </div>
 
-        <Select
-          label="Категория"
-          options={categoryOptions}
-          value={categoryId !== null ? String(categoryId) : ""}
-          onChange={handleCategoryChange}
-          placeholder="Без категории"
-        />
-
-        {subOptions.length > 0 && (
+        <div className={subOptions.length > 0 ? "grid grid-cols-2 gap-2" : ""}>
           <Select
-            label="Подкатегория"
-            options={[{ value: "", label: "—" }, ...subOptions]}
-            value={subcategoryId !== null ? String(subcategoryId) : ""}
-            onChange={(v) => setSubcategoryId(v ? Number(v) : null)}
-            placeholder="—"
+            options={categoryOptions}
+            value={categoryId !== null ? String(categoryId) : ""}
+            onChange={handleCategoryChange}
+            placeholder="Без категории"
           />
-        )}
+          {subOptions.length > 0 && (
+            <Select
+              options={[{ value: "", label: "Без подкатегории" }, ...subOptions]}
+              value={subcategoryId !== null ? String(subcategoryId) : ""}
+              onChange={(v) => setSubcategoryId(v ? Number(v) : null)}
+              placeholder="Без подкатегории"
+            />
+          )}
+        </div>
 
-        <SegmentedControl
-          label="Отслеживание"
-          segments={[
-            { value: "off", label: "Выкл" },
-            { value: "on", label: "Вкл", icon: <Target size={16} strokeWidth={1.75} /> },
-          ]}
-          value={track ? "on" : "off"}
-          onChange={(v) => setTrack(v === "on")}
-        />
+        <label className="flex h-11 cursor-pointer items-center justify-between gap-3 rounded-full bg-surface-2 pl-4 pr-2 text-sm">
+          <span className="flex items-center gap-2">
+            <Target size={16} strokeWidth={1.75} className="text-muted" />
+            Отслеживать
+          </span>
+          <Switch checked={track} onChange={setTrack} label="Отслеживать" />
+        </label>
       </FormGroup>
 
       <div className="mt-auto flex items-center justify-between gap-2 pt-4">

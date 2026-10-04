@@ -124,7 +124,7 @@ export function ReminderForm({
 
       <Textarea value={note} onChange={setNote} placeholder="Заметка (необязательно)" />
 
-      <FormGroup title="Когда" accent>
+      <FormGroup>
         <div className="grid grid-cols-[1fr_auto] items-end gap-2">
           <DatePicker
             label="Дата"
@@ -166,7 +166,7 @@ export function ReminderForm({
         )}
       </FormGroup>
 
-      <FormGroup title="Уведомление">
+      <FormGroup>
         <div className="grid grid-cols-2 gap-2">
           <Input
             label="Напомнить за (0 — выкл)"
@@ -203,7 +203,7 @@ export function ReminderForm({
         )}
       </FormGroup>
 
-      <FormGroup title="Вид">
+      <FormGroup>
         <ColorPicker value={color} onChange={setColor} />
         <IconPicker value={icon} onChange={setIcon} color={color} />
       </FormGroup>

@@ -101,7 +101,7 @@ export function PersonForm({
         placeholder="Кого добавляем?"
       />
 
-      <FormGroup title="Когда родился" accent>
+      <FormGroup>
         <SegmentedControl
           label="Год рождения"
           segments={[
