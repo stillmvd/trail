@@ -70,7 +70,10 @@ export function Select({
         <button
           type="button"
           onClick={() => setOpen((o) => !o)}
-          className="flex w-full cursor-pointer items-center gap-2 h-11 rounded-full border border-line bg-surface-2 px-4 text-sm text-app-text outline-none transition focus:border-amber"
+          aria-expanded={open}
+          className={`flex h-11 w-full cursor-pointer items-center gap-2 rounded-full px-4 text-sm text-app-text transition-colors duration-150 ease-[var(--rg-ease)] ${
+            open ? "bg-surface-active" : "bg-surface-2 hover:bg-surface-3"
+          }`}
         >
           {selected && <OptionIcon opt={selected} />}
           <span className={`flex-1 truncate text-left ${selected ? "" : "text-muted"}`}>
@@ -81,7 +84,7 @@ export function Select({
         {open && (
           <div
             ref={listRef}
-            className="absolute z-50 mt-1.5 max-h-64 w-full overflow-y-auto rounded-3xl border border-line bg-surface-1 py-2 shadow-lg"
+            className="absolute z-50 mt-1.5 max-h-64 w-full overflow-y-auto rounded-3xl bg-surface-2 p-1.5 shadow-lg"
           >
             {options.map((opt) => (
               <button
@@ -92,11 +95,13 @@ export function Select({
                   onChange(opt.value);
                   setOpen(false);
                 }}
-                className="flex w-full cursor-pointer items-center gap-2 px-3 py-2 text-left text-sm text-app-text transition-colors hover:bg-surface-2"
+                className={`flex w-full cursor-pointer items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-app-text transition-colors ${
+                  opt.value === value ? "bg-surface-active" : "hover:bg-surface-3"
+                }`}
               >
                 <OptionIcon opt={opt} />
                 <span className="flex-1 truncate">{opt.label}</span>
-                {opt.value === value && <Check size={15} strokeWidth={1.75} className="shrink-0 text-accent-ink" />}
+                {opt.value === value && <Check size={15} strokeWidth={1.75} className="shrink-0" />}
               </button>
             ))}
           </div>

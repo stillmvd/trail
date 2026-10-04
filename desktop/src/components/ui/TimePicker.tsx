@@ -113,7 +113,10 @@ export function TimePicker({
             if (!value) onChange(nowHHMM());
             setOpen((o) => !o);
           }}
-          className="flex w-full cursor-pointer items-center gap-2 h-11 rounded-full border border-line bg-surface-2 px-4 text-sm text-app-text outline-none transition focus:border-amber"
+          aria-expanded={open}
+          className={`flex h-11 w-full cursor-pointer items-center gap-2 rounded-full px-4 text-sm text-app-text transition-colors duration-150 ease-[var(--rg-ease)] ${
+            open ? "bg-surface-active" : "bg-surface-2 hover:bg-surface-3"
+          }`}
         >
           <Clock size={15} className="shrink-0 text-muted" />
           <span className={`flex-1 text-left tabular-nums ${value ? "" : "text-muted"}`}>
@@ -121,7 +124,7 @@ export function TimePicker({
           </span>
         </button>
         {open && (
-          <div className="absolute right-0 z-50 mt-1 rounded-xl border border-line bg-surface-1 p-2">
+          <div className="absolute right-0 z-50 mt-1 rounded-3xl bg-surface-2 p-2 shadow-lg">
             <div className="flex items-center gap-1">
               <Wheel
                 value={h}
@@ -143,7 +146,7 @@ export function TimePicker({
                 onChange("");
                 setOpen(false);
               }}
-              className="mt-1 w-full cursor-pointer rounded-lg px-2 py-1.5 text-xs text-muted transition-colors hover:bg-surface-2 hover:text-app-text"
+              className="mt-1 w-full cursor-pointer rounded-xl px-2 py-1.5 text-xs text-muted transition-colors hover:bg-surface-3 hover:text-app-text"
             >
               Без времени
             </button>

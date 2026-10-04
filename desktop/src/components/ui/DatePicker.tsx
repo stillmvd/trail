@@ -177,9 +177,9 @@ export function DatePicker({
             aria-haspopup="dialog"
             aria-expanded={open}
             onClick={() => setOpen((o) => !o)}
-            className={`flex h-11 w-full cursor-pointer items-center gap-2 rounded-full border bg-surface-2 px-4 text-sm text-app-text outline-none transition focus:border-amber ${
-              error ? "border-rust" : "border-line"
-            } ${className}`}
+            className={`flex h-11 w-full cursor-pointer items-center gap-2 rounded-full px-4 text-sm text-app-text outline-none transition-colors duration-150 ease-[var(--rg-ease)] ${
+              open ? "bg-surface-active" : "bg-surface-2 hover:bg-surface-3 focus-visible:bg-surface-3"
+            } ${ring} ${className}`}
           >
             <CalendarDays size={15} className="shrink-0 text-muted" />
             <span className={`flex-1 truncate text-left ${value ? "" : "text-muted"}`}>
