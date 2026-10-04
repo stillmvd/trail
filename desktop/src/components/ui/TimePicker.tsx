@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { ChevronDown, ChevronUp, Clock } from "lucide-react";
+import { ChevronDown, ChevronUp, Clock, Plus } from "lucide-react";
 
 const pad = (n: number) => String(n).padStart(2, "0");
 
@@ -49,27 +49,20 @@ function Wheel({
       aria-valuemax={max}
       title="Прокрутите колёсиком"
     >
-      <button
-        type="button"
-        tabIndex={-1}
-        aria-label="Больше"
-        className="tl-wheel-chev"
-        onClick={() => onShift(-1)}
-      >
+      <button type="button" tabIndex={-1} aria-label="Больше" className="tl-wheel-chev" onClick={() => onShift(-1)}>
         <ChevronUp size={13} strokeWidth={1.75} />
       </button>
       <span className="tl-wheel-val text-lg">{pad(value)}</span>
-      <button
-        type="button"
-        tabIndex={-1}
-        aria-label="Меньше"
-        className="tl-wheel-chev"
-        onClick={() => onShift(1)}
-      >
+      <button type="button" tabIndex={-1} aria-label="Меньше" className="tl-wheel-chev" onClick={() => onShift(1)}>
         <ChevronDown size={13} strokeWidth={1.75} />
       </button>
     </div>
   );
+}
+
+function partOfDay(hhmm: string) {
+  const h = Number(hhmm.slice(0, 2));
+  return h < 5 ? "ночь" : h < 12 ? "утро" : h < 18 ? "день" : "вечер";
 }
 
 export function TimePicker({
@@ -77,11 +70,15 @@ export function TimePicker({
   value,
   onChange,
   placeholder = "--:--",
+  variant = "capsule",
+  className = "",
 }: {
   label?: string;
   value: string;
   onChange: (hhmm: string) => void;
   placeholder?: string;
+  variant?: "capsule" | "tile";
+  className?: string;
 }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -91,12 +88,16 @@ export function TimePicker({
     const onDown = (e: MouseEvent) => {
       if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
     };
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      e.stopPropagation();
+      setOpen(false);
+    };
     document.addEventListener("mousedown", onDown, true);
-    document.addEventListener("keydown", onKey);
+    document.addEventListener("keydown", onKey, true);
     return () => {
       document.removeEventListener("mousedown", onDown, true);
-      document.removeEventListener("keydown", onKey);
+      document.removeEventListener("keydown", onKey, true);
     };
   }, [open]);
 
@@ -109,36 +110,46 @@ export function TimePicker({
       <div ref={ref} className="relative">
         <button
           type="button"
+          aria-expanded={open}
+          aria-label={variant === "tile" ? (value ? `Время ${value}` : "Добавить время") : undefined}
           onClick={() => {
             if (!value) onChange(nowHHMM());
             setOpen((o) => !o);
           }}
-          aria-expanded={open}
-          className={`flex h-11 w-full cursor-pointer items-center gap-2 rounded-full px-4 text-sm text-app-text transition-colors duration-150 ease-[var(--rg-ease)] ${
-            open ? "bg-surface-active" : "bg-surface-2 hover:bg-surface-3"
-          }`}
+          className={`flex w-full cursor-pointer items-center text-app-text transition-colors duration-150 ease-[var(--rg-ease)] ${
+            variant === "tile" ? "h-16 gap-3 px-4 text-left outline-none" : "h-11 gap-2 rounded-full px-4 text-sm"
+          } ${open ? "bg-surface-active" : "bg-surface-2 hover:bg-surface-3 focus-visible:bg-surface-3"} ${className}`}
         >
-          <Clock size={15} className="shrink-0 text-muted" />
-          <span className={`flex-1 text-left tabular-nums ${value ? "" : "text-muted"}`}>
-            {value || placeholder}
-          </span>
+          {variant === "tile" ? (
+            value ? (
+              <>
+                <span className="text-[30px] font-bold leading-none tracking-[-0.03em] tabular-nums">{value}</span>
+                <span className="flex min-w-0 flex-col leading-tight">
+                  <span className="truncate text-sm font-semibold">время</span>
+                  <span className="truncate text-xs text-muted">{partOfDay(value)}</span>
+                </span>
+              </>
+            ) : (
+              <span className="flex flex-1 items-center justify-center gap-2 text-sm font-medium text-muted">
+                <Plus size={16} strokeWidth={1.75} />
+                Время
+              </span>
+            )
+          ) : (
+            <>
+              <Clock size={15} className="shrink-0 text-muted" />
+              <span className={`flex-1 text-left tabular-nums ${value ? "" : "text-muted"}`}>
+                {value || placeholder}
+              </span>
+            </>
+          )}
         </button>
         {open && (
-          <div className="absolute right-0 z-50 mt-1 rounded-3xl bg-surface-2 p-2 shadow-lg">
+          <div className="absolute right-0 z-50 mt-2 rounded-3xl bg-surface-2 p-2 shadow-lg">
             <div className="flex items-center gap-1">
-              <Wheel
-                value={h}
-                max={23}
-                ariaLabel="Часы"
-                onShift={(d) => set((h + d + 24) % 24, m)}
-              />
+              <Wheel value={h} max={23} ariaLabel="Часы" onShift={(d) => set((h + d + 24) % 24, m)} />
               <span className="text-lg text-muted">:</span>
-              <Wheel
-                value={m}
-                max={59}
-                ariaLabel="Минуты"
-                onShift={(d) => set(h, (m + d + 60) % 60)}
-              />
+              <Wheel value={m} max={59} ariaLabel="Минуты" onShift={(d) => set(h, (m + d + 60) % 60)} />
             </div>
             <button
               type="button"

@@ -79,7 +79,7 @@ export function SideSheet({
                 <OverlayContext.Provider value={overlay}>{children}</OverlayContext.Provider>
               </HeaderSlotContext.Provider>
             </div>
-            <div ref={setOverlay} className="pointer-events-none absolute inset-0 overflow-hidden rounded-l-4xl" />
+            <div ref={setOverlay} className="pointer-events-none absolute inset-0 z-10 overflow-hidden rounded-l-4xl" />
           </motion.aside>
         </>
       )}

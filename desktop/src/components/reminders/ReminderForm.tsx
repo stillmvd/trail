@@ -1,19 +1,17 @@
 import { useState } from "react";
 import { TIMELINE_MIN_DATE, TIMELINE_MAX_DATE, isValidISODate } from "@/lib/constants";
 import { todayISO } from "@/lib/dates";
-import { REPEAT_OPTIONS, type RepeatKind, type RepeatUnit } from "@/lib/reminders";
-import { Input } from "@/components/ui/Input";
+import type { RepeatKind, RepeatUnit } from "@/lib/reminders";
 import { TextPair } from "@/components/ui/TextPair";
 import { DatePicker } from "@/components/ui/DatePicker";
 import { TimePicker } from "@/components/ui/TimePicker";
-import { Select } from "@/components/ui/Select";
-import { Switch } from "@/components/ui/Switch";
 import { IconPicker } from "@/components/ui/IconPicker";
 import { ColorPicker } from "@/components/ui/ColorPicker";
 import { Button } from "@/components/ui/Button";
 import { FormGroup } from "@/components/ui/FormGroup";
 import type { ReminderInput } from "@/db/queries/reminders";
 import { DEFAULT_CATEGORY_COLOR } from "@/lib/colors";
+import { NagBlock, PreNotifyBlock, RepeatBlock, SettingsStack } from "./ReminderSettings";
 
 export interface ReminderFormValues {
   title: string;
@@ -34,16 +32,6 @@ export interface ReminderFormValues {
 const DEFAULT_ICON = "Bell";
 const DEFAULT_COLOR = DEFAULT_CATEGORY_COLOR;
 
-type PreUnit = "min" | "hour" | "day";
-
-const PRE_UNIT_MINUTES: Record<PreUnit, number> = { min: 1, hour: 60, day: 1440 };
-
-function splitPreNotify(totalMin: number): { value: number; unit: PreUnit } {
-  if (totalMin > 0 && totalMin % 1440 === 0) return { value: totalMin / 1440, unit: "day" };
-  if (totalMin > 0 && totalMin % 60 === 0) return { value: totalMin / 60, unit: "hour" };
-  return { value: totalMin, unit: "min" };
-}
-
 export function ReminderForm({
   initial,
   mode = "create",
@@ -62,13 +50,11 @@ export function ReminderForm({
   const [date, setDate] = useState(initial?.date ?? todayISO());
   const [time, setTime] = useState(initial?.time ?? "");
   const [repeat, setRepeat] = useState<RepeatKind>(initial?.repeat ?? "none");
-  const [repeatEvery, setRepeatEvery] = useState(String(initial?.repeatEvery ?? 3));
+  const [repeatEvery, setRepeatEvery] = useState(initial?.repeatEvery ?? 3);
   const [repeatUnit, setRepeatUnit] = useState<RepeatUnit>(initial?.repeatUnit ?? "day");
-  const initialPre = splitPreNotify(initial?.preNotifyMin ?? 0);
-  const [preValue, setPreValue] = useState(String(initialPre.value));
-  const [preUnit, setPreUnit] = useState<PreUnit>(initialPre.unit);
+  const [preNotifyMin, setPreNotifyMin] = useState(initial?.preNotifyMin ?? 0);
   const [nag, setNag] = useState(initial?.nag ?? false);
-  const [nagIntervalMin, setNagIntervalMin] = useState(String(initial?.nagIntervalMin ?? 30));
+  const [nagIntervalMin, setNagIntervalMin] = useState(initial?.nagIntervalMin ?? 30);
   const [icon, setIcon] = useState(initial?.icon ?? DEFAULT_ICON);
   const [color, setColor] = useState(initial?.color ?? DEFAULT_COLOR);
 
@@ -101,11 +87,11 @@ export function ReminderForm({
       date,
       time: time || null,
       repeat,
-      repeatEvery: repeat === "custom" ? Math.max(1, Number(repeatEvery) || 1) : null,
+      repeatEvery: repeat === "custom" ? repeatEvery : null,
       repeatUnit: repeat === "custom" ? repeatUnit : null,
-      preNotifyMin: Math.max(0, Number(preValue) || 0) * PRE_UNIT_MINUTES[preUnit],
+      preNotifyMin,
       nag: nag ? 1 : 0,
-      nagIntervalMin: nag ? Math.max(1, Number(nagIntervalMin) || 30) : null,
+      nagIntervalMin: nag ? nagIntervalMin : null,
       icon,
       color,
       eventId: initial?.eventId ?? null,
@@ -125,84 +111,33 @@ export function ReminderForm({
         autoFocus
       />
 
-      <FormGroup>
-        <div className="grid grid-cols-[1fr_auto] items-end gap-2">
-          <DatePicker
-            label="Дата"
-            value={date}
-            onChange={setDate}
-            error={dateError}
-            min={TIMELINE_MIN_DATE}
-            max={TIMELINE_MAX_DATE}
-          />
-          <TimePicker label="Время" value={time} onChange={setTime} />
-        </div>
-
-        <Select
-          label="Повтор"
-          options={REPEAT_OPTIONS.map((o) => ({ value: o.value, label: o.label }))}
-          value={repeat}
-          onChange={(v) => setRepeat(v as RepeatKind)}
+      <div className="grid grid-cols-2 gap-0.5">
+        <DatePicker
+          variant="tile"
+          className="rounded-l-3xl rounded-r-xs"
+          value={date}
+          onChange={setDate}
+          error={dateError}
+          min={TIMELINE_MIN_DATE}
+          max={TIMELINE_MAX_DATE}
         />
+        <TimePicker variant="tile" className="rounded-l-xs rounded-r-3xl" value={time} onChange={setTime} />
+      </div>
 
-        {repeat === "custom" && (
-          <div className="grid grid-cols-2 gap-2">
-            <Input
-              label="Каждые"
-              value={repeatEvery}
-              onChange={setRepeatEvery}
-              type="number"
-              min={1}
-            />
-            <Select
-              label="Единица"
-              options={[
-                { value: "day", label: "дней" },
-                { value: "week", label: "недель" },
-              ]}
-              value={repeatUnit}
-              onChange={(v) => setRepeatUnit(v as RepeatUnit)}
-            />
-          </div>
-        )}
-      </FormGroup>
-
-      <FormGroup>
-        <div className="grid grid-cols-2 gap-2">
-          <Input
-            label="Напомнить за (0 — выкл)"
-            value={preValue}
-            onChange={setPreValue}
-            type="number"
-            min={0}
-          />
-          <Select
-            label="Единица"
-            options={[
-              { value: "min", label: "минут" },
-              { value: "hour", label: "часов" },
-              { value: "day", label: "дней" },
-            ]}
-            value={preUnit}
-            onChange={(v) => setPreUnit(v as PreUnit)}
-          />
-        </div>
-
-        <div className="flex items-center justify-between gap-3">
-          <span className="text-sm text-app-text">Повторять, пока не выполню</span>
-          <Switch label="Повторять, пока не выполню" checked={nag} onChange={setNag} />
-        </div>
-
-        {nag && (
-          <Input
-            label="Интервал повтора, минут"
-            value={nagIntervalMin}
-            onChange={setNagIntervalMin}
-            type="number"
-            min={1}
-          />
-        )}
-      </FormGroup>
+      <SettingsStack>
+        <RepeatBlock
+          repeat={repeat}
+          every={repeatEvery}
+          unit={repeatUnit}
+          onChange={(r, every, unit) => {
+            setRepeat(r);
+            setRepeatEvery(every);
+            setRepeatUnit(unit);
+          }}
+        />
+        <PreNotifyBlock value={preNotifyMin} onChange={setPreNotifyMin} />
+        <NagBlock nag={nag} interval={nagIntervalMin} onNag={setNag} onInterval={setNagIntervalMin} />
+      </SettingsStack>
 
       <FormGroup>
         <ColorPicker value={color} onChange={setColor} />

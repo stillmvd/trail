@@ -1,11 +1,9 @@
-import { createElement, useEffect, useRef, useState, type ReactNode } from "react";
-import { createPortal } from "react-dom";
-import { AnimatePresence, motion, useIsPresent } from "motion/react";
-import { Ban, Check, ChevronLeft, ChevronRight, Search } from "lucide-react";
+import { createElement, useRef, useState, type ReactNode } from "react";
+import { Ban, Check, ChevronRight, Search } from "lucide-react";
 import type { Category, CategoryNode } from "@/db/queries/categories";
 import { resolveIcon } from "@/lib/icons";
 import { onColorFor } from "@/lib/colors";
-import { useSheetOverlay } from "@/components/ui/SideSheet";
+import { SheetLayer, SheetPanel } from "@/components/ui/SheetPanel";
 
 type Pick = (categoryId: number | null, subcategoryId: number | null) => void;
 
@@ -72,33 +70,7 @@ function Screen({
 }) {
   const [drill, setDrill] = useState<CategoryNode | null>(null);
   const [query, setQuery] = useState("");
-  const ref = useRef<HTMLDivElement>(null);
-  const backRef = useRef(() => {});
-  const present = useIsPresent();
-  const presentRef = useRef(present);
-
   const back = () => (query ? setQuery("") : drill ? setDrill(null) : onClose());
-  useEffect(() => {
-    backRef.current = back;
-    presentRef.current = present;
-  });
-
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key !== "Escape" || !presentRef.current) return;
-      e.stopPropagation();
-      backRef.current();
-    };
-    document.addEventListener("keydown", onKey, true);
-    return () => document.removeEventListener("keydown", onKey, true);
-  }, []);
-
-  useEffect(() => {
-    const host = ref.current?.parentElement;
-    const behind = [...(host?.parentElement?.children ?? [])].filter((el) => el !== host) as HTMLElement[];
-    behind.forEach((el) => (el.inert = true));
-    return () => behind.forEach((el) => (el.inert = false));
-  }, []);
 
   const q = query.trim().toLowerCase();
   const found = q
@@ -193,43 +165,20 @@ function Screen({
   }
 
   return (
-    <motion.div
-      ref={ref}
-      role="dialog"
-      aria-modal="true"
-      aria-label="Категория"
-      className="pointer-events-auto absolute inset-0 flex flex-col bg-surface-1"
-      initial={{ opacity: 0, x: 28 }}
-      animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0, x: 28 }}
-      transition={{ type: "spring", duration: 0.3, bounce: 0 }}
-    >
-      <header className="flex shrink-0 items-center gap-3 px-7 pb-3 pt-6">
-        <button
-          type="button"
-          aria-label="Назад"
-          onClick={back}
-          className="grid h-10 w-10 shrink-0 cursor-pointer place-items-center rounded-full bg-surface-2 text-app-text transition-[background-color,scale] duration-150 ease-[var(--rg-ease)] hover:bg-surface-3 active:scale-[0.96]"
-        >
-          <ChevronLeft size={20} strokeWidth={1.75} />
-        </button>
-        <h2 className="truncate text-xl font-bold tracking-tight text-app-text">{(!q && drill?.name) || "Категория"}</h2>
-      </header>
-      <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-7 pb-7 [scrollbar-gutter:stable]">
-        <label className="flex h-11 shrink-0 items-center gap-2 rounded-full bg-surface-2 px-4 text-muted">
-          <Search size={16} strokeWidth={1.75} className="shrink-0" />
-          <input
-            autoFocus
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Найти категорию"
-            aria-label="Найти категорию"
-            className="min-w-0 flex-1 bg-transparent text-sm text-app-text outline-none placeholder:text-muted"
-          />
-        </label>
-        {body}
-      </div>
-    </motion.div>
+    <SheetPanel title={(!q && drill?.name) || "Категория"} label="Категория" onBack={back}>
+      <label className="flex h-11 shrink-0 items-center gap-2 rounded-full bg-surface-2 px-4 text-muted">
+        <Search size={16} strokeWidth={1.75} className="shrink-0" />
+        <input
+          autoFocus
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Найти категорию"
+          aria-label="Найти категорию"
+          className="min-w-0 flex-1 bg-transparent text-sm text-app-text outline-none placeholder:text-muted"
+        />
+      </label>
+      {body}
+    </SheetPanel>
   );
 }
 
@@ -245,7 +194,6 @@ export function CategoryPicker({
   onChange: Pick;
 }) {
   const [open, setOpen] = useState(false);
-  const overlay = useSheetOverlay();
   const triggerRef = useRef<HTMLButtonElement>(null);
   const parent = categories.find((c) => c.id === categoryId) ?? null;
   const sub = parent?.children.find((c) => c.id === subcategoryId) ?? null;
@@ -278,25 +226,19 @@ export function CategoryPicker({
         </span>
         <ChevronRight size={18} strokeWidth={1.75} className="shrink-0 text-muted" />
       </button>
-      {overlay &&
-        createPortal(
-          <AnimatePresence onExitComplete={() => triggerRef.current?.focus()}>
-            {open && (
-              <Screen
-                key="screen"
-                categories={categories}
-                categoryId={categoryId}
-                subcategoryId={subcategoryId}
-                onClose={close}
-                onPick={(cat, s) => {
-                  onChange(cat, s);
-                  close();
-                }}
-              />
-            )}
-          </AnimatePresence>,
-          overlay,
-        )}
+      <SheetLayer open={open} onExitComplete={() => triggerRef.current?.focus()}>
+        <Screen
+          key="screen"
+          categories={categories}
+          categoryId={categoryId}
+          subcategoryId={subcategoryId}
+          onClose={close}
+          onPick={(cat, s) => {
+            onChange(cat, s);
+            close();
+          }}
+        />
+      </SheetLayer>
     </>
   );
 }

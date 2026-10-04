@@ -1,3 +1,4 @@
+import { AnimatePresence, motion } from "motion/react";
 import { Check } from "lucide-react";
 import { CATEGORY_COLORS, onColorFor } from "@/lib/colors";
 
@@ -17,22 +18,34 @@ export function ColorPicker({
         {CATEGORY_COLORS.map((color) => {
           const active = color.toLowerCase() === value.toLowerCase();
           return (
-            <button
+            <motion.button
               key={color}
               type="button"
               aria-label={color}
               aria-pressed={active}
               onClick={() => onChange(color)}
-              className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full outline-none transition-[scale,box-shadow] duration-150 ease-[var(--rg-ease)] hover:scale-110 active:scale-[0.96]"
-              style={{
-                background: color,
-                boxShadow: active
-                  ? "0 0 0 2px var(--ds-surface-1), 0 0 0 4px var(--rg-text)"
-                  : undefined,
-              }}
+              className="grid h-8 w-8 cursor-pointer place-items-center rounded-full outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--rg-text)]"
+              style={{ background: color, zIndex: active ? 1 : undefined }}
+              initial={false}
+              animate={{ scale: active ? 1.22 : 1 }}
+              whileHover={{ scale: active ? 1.22 : 1.1 }}
+              whileTap={{ scale: 0.92 }}
+              transition={{ type: "spring", duration: 0.35, bounce: 0.3 }}
             >
-              {active && <Check size={16} strokeWidth={3} style={{ color: onColorFor(color) }} />}
-            </button>
+              <AnimatePresence initial={false}>
+                {active && (
+                  <motion.span
+                    className="grid place-items-center"
+                    initial={{ scale: 0, rotate: -60, opacity: 0 }}
+                    animate={{ scale: 1, rotate: 0, opacity: 1 }}
+                    exit={{ scale: 0, opacity: 0 }}
+                    transition={{ type: "spring", duration: 0.3, bounce: 0 }}
+                  >
+                    <Check size={16} strokeWidth={3} style={{ color: onColorFor(color) }} />
+                  </motion.span>
+                )}
+              </AnimatePresence>
+            </motion.button>
           );
         })}
       </div>
