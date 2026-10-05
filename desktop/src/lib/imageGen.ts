@@ -1,3 +1,4 @@
+import { invoke } from "@tauri-apps/api/core";
 import { fetch } from "@tauri-apps/plugin-http";
 import { createLocalStore } from "./localStore";
 
@@ -5,6 +6,7 @@ export type ImageProvider = "comfyui" | "cloudflare" | "openrouter";
 
 export const imageProviderStore = createLocalStore<ImageProvider>("trail.imagegen.provider", "comfyui");
 export const comfyUrlStore = createLocalStore<string>("trail.imagegen.comfyUrl", "http://127.0.0.1:8000");
+export const comfyDirStore = createLocalStore<string>("trail.imagegen.comfyDir", "C:/AI/ComfyUI/ComfyUI/ComfyUI");
 export const cfAccountStore = createLocalStore<string>("trail.imagegen.cfAccount", "");
 export const cfTokenStore = createLocalStore<string>("trail.imagegen.cfToken", "");
 export const openRouterKeyStore = createLocalStore<string>("trail.imagegen.openRouterKey", "");
@@ -37,14 +39,55 @@ const COMFY_VAE = "ae.safetensors";
 
 const NO_ORIGIN = { Origin: "" };
 
-export async function generateEventImage(title: string, description: string): Promise<File> {
+const COMFY_BOOT_MS = 2 * 60_000;
+
+export async function generateEventImage(
+  title: string,
+  description: string,
+  onStatus?: (message: string) => void,
+): Promise<File> {
   const entry = [title.trim(), description.trim()].filter(Boolean).join(". ");
   const scene = (await describeScene(entry)) || entry;
   const prompt = `${scene}\n\n${STYLE}`;
   const provider = imageProviderStore.get();
   if (provider === "cloudflare") return generateCloudflare(prompt);
   if (provider === "openrouter") return generateOpenRouter(prompt);
-  return generateComfy(prompt);
+  try {
+    return await generateComfy(prompt, onStatus);
+  } catch (e) {
+    if (!cfAccountStore.get().trim() || !cfTokenStore.get().trim()) throw e;
+    onStatus?.("ComfyUI недоступен — рисую в Cloudflare");
+    return generateCloudflare(prompt);
+  }
+}
+
+async function comfyAlive(base: string): Promise<boolean> {
+  try {
+    return (await fetch(`${base}/system_stats`, { headers: NO_ORIGIN, connectTimeout: 1500 })).ok;
+  } catch {
+    return false;
+  }
+}
+
+async function ensureComfy(base: string, onStatus?: (message: string) => void) {
+  if (await comfyAlive(base)) return;
+  const url = new URL(base);
+  if (url.hostname !== "127.0.0.1" && url.hostname !== "localhost") {
+    throw new Error(`ComfyUI не отвечает по адресу ${base}`);
+  }
+  try {
+    await invoke("comfy_start", { dir: comfyDirStore.get().trim(), port: Number(url.port) || 80 });
+  } catch (e) {
+    throw new Error(String(e));
+  }
+  onStatus?.("Запускаю ComfyUI — первая картинка займёт около минуты");
+  const deadline = Date.now() + COMFY_BOOT_MS;
+  while (Date.now() < deadline) {
+    await new Promise((r) => setTimeout(r, 1000));
+    if (await comfyAlive(base)) return;
+    if (!(await invoke<boolean>("comfy_running"))) throw new Error("ComfyUI завершился при запуске");
+  }
+  throw new Error("ComfyUI не запустился за 2 минуты");
 }
 
 async function describeScene(entry: string): Promise<string | null> {
@@ -99,8 +142,23 @@ function clean(text: unknown): string | null {
   return line || null;
 }
 
-async function generateComfy(prompt: string): Promise<File> {
+async function generateComfy(prompt: string, onStatus?: (message: string) => void): Promise<File> {
   const base = comfyUrlStore.get().trim().replace(/\/+$/, "");
+  await ensureComfy(base, onStatus);
+  try {
+    return await runComfy(base, prompt);
+  } finally {
+    if (await invoke<boolean>("comfy_running").catch(() => false)) {
+      void fetch(`${base}/free`, {
+        method: "POST",
+        headers: { ...NO_ORIGIN, "Content-Type": "application/json" },
+        body: JSON.stringify({ unload_models: true, free_memory: true }),
+      }).catch(() => {});
+    }
+  }
+}
+
+async function runComfy(base: string, prompt: string): Promise<File> {
   const workflow = {
     1: { class_type: "UNETLoader", inputs: { unet_name: COMFY_UNET, weight_dtype: "default" } },
     2: { class_type: "CLIPLoader", inputs: { clip_name: COMFY_CLIP, type: "lumina2", device: "default" } },
@@ -136,7 +194,7 @@ async function generateComfy(prompt: string): Promise<File> {
       body: JSON.stringify({ prompt: workflow }),
     });
   } catch {
-    throw new Error(`ComfyUI не отвечает по адресу ${base} — запустите его`);
+    throw new Error(`ComfyUI не отвечает по адресу ${base}`);
   }
   const { prompt_id: id, node_errors: nodeErrors } = await queued.json();
   if (!id) throw new Error(`ComfyUI отклонил задачу: ${JSON.stringify(nodeErrors).slice(0, 200)}`);

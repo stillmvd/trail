@@ -320,6 +320,69 @@ fn migrate_legacy_app_data(app: &tauri::App) {
     }
 }
 
+struct Comfy(std::sync::Mutex<Option<std::process::Child>>);
+
+fn comfy_models_yaml() -> Option<std::path::PathBuf> {
+    let dir = std::path::PathBuf::from(std::env::var("APPDATA").ok()?)
+        .join("Comfy Desktop")
+        .join("instance-model-paths");
+    fs::read_dir(dir)
+        .ok()?
+        .filter_map(|e| e.ok())
+        .map(|e| e.path())
+        .find(|p| p.extension().is_some_and(|x| x == "yaml"))
+}
+
+#[tauri::command]
+fn comfy_start(state: tauri::State<Comfy>, dir: String, port: u16) -> Result<(), String> {
+    let mut slot = state.0.lock().map_err(|e| e.to_string())?;
+    if let Some(child) = slot.as_mut() {
+        if matches!(child.try_wait(), Ok(None)) {
+            return Ok(());
+        }
+    }
+    let root = std::path::Path::new(&dir);
+    let python = root.join(".venv").join("Scripts").join("python.exe");
+    if !python.exists() || !root.join("main.py").exists() {
+        return Err(format!("Не найден ComfyUI в папке {dir}"));
+    }
+    let mut cmd = std::process::Command::new(python);
+    cmd.current_dir(root)
+        .args(["main.py", "--listen", "127.0.0.1", "--port", &port.to_string(), "--disable-auto-launch"])
+        .stdin(std::process::Stdio::null())
+        .stdout(std::process::Stdio::null())
+        .stderr(std::process::Stdio::null());
+    if let Some(yaml) = comfy_models_yaml() {
+        cmd.arg("--extra-model-paths-config").arg(yaml);
+    }
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+        cmd.creation_flags(0x0800_0000);
+    }
+    *slot = Some(cmd.spawn().map_err(|e| e.to_string())?);
+    Ok(())
+}
+
+#[tauri::command]
+fn comfy_running(state: tauri::State<Comfy>) -> bool {
+    state
+        .0
+        .lock()
+        .ok()
+        .and_then(|mut slot| slot.as_mut().map(|c| matches!(c.try_wait(), Ok(None))))
+        .unwrap_or(false)
+}
+
+fn comfy_kill(state: &Comfy) {
+    if let Ok(mut slot) = state.0.lock() {
+        if let Some(mut child) = slot.take() {
+            let _ = child.kill();
+            let _ = child.wait();
+        }
+    }
+}
+
 pub fn run() {
     let mut builder = tauri::Builder::default();
 
@@ -354,7 +417,10 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_sql::Builder::default().build())
         .plugin(tauri_plugin_http::init())
+        .manage(Comfy(std::sync::Mutex::new(None)))
         .invoke_handler(tauri::generate_handler![
+            comfy_start,
+            comfy_running,
             save_media,
             delete_media,
             create_backup,
@@ -380,6 +446,11 @@ pub fn run() {
             }
             Ok(())
         })
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .build(tauri::generate_context!())
+        .expect("error while running tauri application")
+        .run(|app, event| {
+            if let tauri::RunEvent::Exit = event {
+                comfy_kill(&app.state::<Comfy>());
+            }
+        });
 }

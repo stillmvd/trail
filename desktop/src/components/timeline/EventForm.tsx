@@ -81,7 +81,7 @@ export function EventForm({
   async function handleGenerate() {
     setGenerating(true);
     try {
-      photo.pick([await generateEventImage(title, description)]);
+      photo.pick([await generateEventImage(title, description, (m) => show(m, "info"))]);
     } catch (e) {
       show(e instanceof Error ? e.message : String(e), "error");
     } finally {
