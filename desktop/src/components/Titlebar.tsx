@@ -1,3 +1,4 @@
+import { UpdateBadge } from "@stillmvd/tauri-ship";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { Minus, Square, X } from "lucide-react";
 import { Mark } from "./brand/Mark";
@@ -16,7 +17,10 @@ export function Titlebar() {
           Trail
         </span>
       </div>
-      <div className="flex h-full">
+      <div className="flex h-full items-center">
+        <span className="mr-3 flex empty:hidden">
+          <UpdateBadge lang="ru" />
+        </span>
         <button
           type="button"
           onClick={() => win.minimize()}

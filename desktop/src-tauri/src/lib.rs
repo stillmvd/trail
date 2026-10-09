@@ -383,6 +383,13 @@ fn comfy_kill(state: &Comfy) {
     }
 }
 
+fn window_flags() -> tauri_plugin_window_state::StateFlags {
+    tauri_plugin_window_state::StateFlags::SIZE
+        | tauri_plugin_window_state::StateFlags::POSITION
+        | tauri_plugin_window_state::StateFlags::MAXIMIZED
+        | tauri_plugin_window_state::StateFlags::FULLSCREEN
+}
+
 pub fn run() {
     let mut builder = tauri::Builder::default();
 
@@ -398,12 +405,7 @@ pub fn run() {
             // Только геометрия — без VISIBLE, иначе автостарт в трей (--minimized) восстановил бы
             // показанное окно.
             tauri_plugin_window_state::Builder::default()
-                .with_state_flags(
-                    tauri_plugin_window_state::StateFlags::SIZE
-                        | tauri_plugin_window_state::StateFlags::POSITION
-                        | tauri_plugin_window_state::StateFlags::MAXIMIZED
-                        | tauri_plugin_window_state::StateFlags::FULLSCREEN,
-                )
+                .with_state_flags(window_flags())
                 .build(),
         )
         .plugin(tauri_plugin_autostart::init(
@@ -413,6 +415,11 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
+        .plugin(tauri_plugin_ship::init(|app| {
+            use tauri_plugin_window_state::AppHandleExt;
+            let _ = app.save_window_state(window_flags());
+            comfy_kill(&app.state::<Comfy>());
+        }))
         .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_sql::Builder::default().build())

@@ -180,7 +180,7 @@ export function SettingsPage() {
           <ImageGenPanel />
         </Section>
 
-        <Section title="Обновления" description="Новые версии приходят с GitHub.">
+        <Section title="Обновления" description="Новые версии скачиваются с GitHub в фоне и ставятся при перезапуске.">
           <UpdatePanel />
         </Section>
 

@@ -33,6 +33,24 @@
   --rg-sig-3-on: var(--ds-on-accent);
 
   --rg-ease: var(--ds-ease);
+
+  --ship-bg: var(--ds-surface-2);
+  --ship-fg: var(--ds-text);
+  --ship-muted: var(--ds-text-muted);
+  --ship-accent: var(--ds-accent);
+  --ship-accent-hover: var(--ds-accent-hover);
+  --ship-accent-fg: var(--ds-on-accent);
+  --ship-accent-soft: var(--ds-accent-ghost);
+  --ship-warn: var(--ds-danger);
+  --ship-hover: var(--ds-surface-3);
+  --ship-border: var(--ds-line);
+  --ship-radius: var(--ds-radius-lg);
+  --ship-font: var(--ds-font);
+}
+
+.ship-badge,
+.ship-toast-title {
+  --ship-accent: var(--ds-accent-ink);
 }
 
 [data-theme="light"] {

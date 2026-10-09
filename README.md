@@ -32,19 +32,15 @@ npx tsc --noEmit   # проверка типов фронта
 cargo check        # из desktop/src-tauri — проверка Rust
 ```
 
-## Сборка релиза
+## Релиз и обновления
 
 ```bash
 cd desktop
-pnpm tauri build   # NSIS-инсталлятор → src-tauri/target/release/bundle/nsis/
-bash cleanup.sh    # очистка тяжёлых артефактов target/ после сборки
+pnpm release       # проверки → версия по коммитам → сборка и подпись → установка → публикация в GitHub Releases
+pnpm ship status   # опубликован ли релиз
 ```
 
-Установщик `Trail_<version>_x64-setup.exe` ставит приложение в `Program Files\Trail` (perMachine, ярлык в Пуске, деинсталлятор).
-
-## Обновление версии
-
-Перед релизом поднять `version` в `desktop/src-tauri/tauri.conf.json` и `desktop/src-tauri/Cargo.toml`. **Не менять** `productName` (`Trail`) и `identifier` (`com.stillmvd.trail`) — от них зависят обнаружение прошлой установки и путь к данным. Подробнее — в [CLAUDE.md](./CLAUDE.md).
+Релизы собираются локально пакетом [tauri-ship](https://github.com/stillmvd/tauri-ship); версия живёт в `desktop/package.json`. Установщик `Trail_<version>_x64-setup.exe` ставит приложение в `Program Files\Trail` (perMachine, ярлык в Пуске, деинсталлятор). Приложение само скачивает обновления в фоне и предлагает перезапуск. **Не менять** `productName` (`Trail`) и `identifier` (`com.stillmvd.trail`) — от них зависят обнаружение прошлой установки и путь к данным.
 
 ## Структура
 

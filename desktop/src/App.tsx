@@ -6,7 +6,7 @@ import { EventsProvider } from "./components/events/EventsProvider";
 import { PeopleProvider } from "./components/events/PeopleProvider";
 import { RemindersProvider } from "./components/events/RemindersProvider";
 import { SearchHost } from "./components/search/SearchHost";
-import { UpdateWatcher } from "./components/settings/UpdatePanel";
+import { UpdateToast } from "@stillmvd/tauri-ship";
 import { modeStore, type ViewMode } from "./lib/mode";
 import { useApplyTheme } from "./lib/theme";
 import { useCloseToTray } from "./lib/behavior";
@@ -57,7 +57,7 @@ export default function App() {
               </div>
             </div>
             <SearchHost />
-            <UpdateWatcher />
+            <UpdateToast lang="ru" />
             {Agentation && (
               <Suspense>
                 <Agentation appName="Trail" endpoint="http://localhost:4747" />
