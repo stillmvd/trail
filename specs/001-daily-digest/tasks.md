@@ -92,7 +92,7 @@
 
 - [ ] T028 [US2] `desktop/src/components/digest/DigestCard.tsx` по выбору стенда 004: превью `previewSrc` или `CoverPlaceholder`, заголовок, источник, дата публикации (`date-fns`, по-русски), `why`; клик → `openUrl` (`@tauri-apps/plugin-opener`) + `markEntryOpened`; spring `bounce: 0`, `active:scale-[0.96]`
 - [ ] T029 [P] [US2] `desktop/src/components/digest/NearList.tsx`: свёрнутая строка «Было близко: N» → заголовки-ссылки (`openUrl`), без превью и `why`; раскрытие — только `transform`/`opacity`
-- [ ] T030 [US2] `desktop/src/components/digest/DigestProvider.tsx`: контекст — список сводок, текущая сводка, позиции, реакции, звёзды, CRUD через `db/queries/digest*.ts`, обновление `digestUnseenStore`; слушатель `open-digest`
+- [x] T030 [US2] `desktop/src/components/digest/DigestProvider.tsx`: контекст — список сводок, текущая сводка, позиции, реакции, звёзды, CRUD через `db/queries/digest*.ts`, обновление `digestUnseenStore`; слушатель `open-digest`
 - [ ] T031 [US2] `desktop/src/components/digest/DigestView.tsx` + `desktop/src/pages/DigestPage.tsx`: группы по `topic` в порядке `topicsFromInterests(digest_interests)` (порядок интересов, «Любопытное» последней), внутри — по `position`; позиции добора (`added_at` позже `digests.created_at` > 1 мин) — отдельными группами «добавлено в ЧЧ:ММ» по моменту добавления, вид по стенду 005; пустые состояния по стенду 005
 - [ ] T032 [US2] `desktop/src/components/digest/useDigestKeys.ts`: по `KeyboardEvent.code` вне полей ввода — `KeyJ`/`KeyK` следующая/предыдущая (через темы), `Enter` открыть, `KeyL` лайк, `KeyD` дизлайк, `KeyS` звезда; выбранная карточка — `bg-surface-active`, прокрутка в видимую область
 
@@ -121,7 +121,7 @@
 
 - [ ] T035 [US3] Лайк/дизлайк на `DigestCard.tsx` (повтор снимает, `setReaction(itemId, null)`); дизлайк = просмотрено (`markEntryOpened`)
 - [ ] T036 [US3] Контекстное меню карточки (`desktop/src/components/ui/ContextMenu.tsx`): «Больше не показывать этот домен» → `banDomain(domain)`, карточки домена в текущей сводке гаснут
-- [ ] T037 [US3] Проверить, что `collect.ts` передаёт в `buildPrompt` `recentReactions(15)` и `dislikeStreaksBySource()`, а `freshCandidates` исключает `digest_bans`; в DEV — лог промпта в консоль
+- [x] T037 [US3] Проверить, что `collect.ts` передаёт в `buildPrompt` `recentReactions(15)` и `dislikeStreaksBySource()`, а `freshCandidates` исключает `digest_bans`; в DEV — лог промпта в консоль
 
 **Checkpoint**: Independent Test пройден. Коммит фазы.
 
@@ -133,10 +133,10 @@
 
 **Independent Test**: отметить все `main` → сводка просмотрена, точка гаснет; звезда → «Сохранённое» переживает чистку сводки; поиск раздела находит прошлые материалы, общий Ctrl+F — нет.
 
-- [ ] T038 [US4] Авто-просмотр: после `markEntryOpened`/дизлайка, если у всех `main`-позиций есть `opened_at` или реакция -1 → `markDigestViewed` и обновить `digestUnseenStore` (`DigestProvider.tsx`)
+- [x] T038 [US4] Авто-просмотр: после `markEntryOpened`/дизлайка, если у всех `main`-позиций есть `opened_at` или реакция -1 → `markDigestViewed` и обновить `digestUnseenStore` (`DigestProvider.tsx`)
 - [ ] T039 [US4] `desktop/src/components/digest/DigestArchive.tsx` по стенду 006: список сводок (новая выделена `bg-surface-active`), переключение сводки, «Сохранённое» (`listSaved`); звезда на карточке → `toggleSaved`
 - [ ] T040 [US4] Поиск раздела: поле в `DigestHeader.tsx` → `searchItems(query)`; `desktop/src/components/search/SearchHost.tsx:26–29` не перехватывает `/` и Ctrl+F при `mode === "digest"`, раздел фокусирует своё поле
-- [ ] T041 [US4] `desktop/src/lib/digest/prune.ts`: после каждого успешного сбора — порядок из `data-model.md` «Чистка»: сводки старше `digest_keep_digests_days` (365) → позиции и сводки; кандидаты старше `digest_keep_candidates_days` (60) без позиций, звезды и реакции; превью старше `digest_keep_previews_days` (90) → `prune_digest_previews` + `preview_file = NULL`; затем проход по сиротам: новая Rust-команда `list_digest_previews() -> Vec<String>` (имена файлов `digest-cache/`) в `desktop/src-tauri/src/lib.rs`, всё, чего нет среди `digest_items.preview_file`, удалить `prune_digest_previews`
+- [x] T041 [US4] `desktop/src/lib/digest/prune.ts`: после каждого успешного сбора — порядок из `data-model.md` «Чистка»: сводки старше `digest_keep_digests_days` (365) → позиции и сводки; кандидаты старше `digest_keep_candidates_days` (60) без позиций, звезды и реакции; превью старше `digest_keep_previews_days` (90) → `prune_digest_previews` + `preview_file = NULL`; затем проход по сиротам: новая Rust-команда `list_digest_previews() -> Vec<String>` (имена файлов `digest-cache/`) в `desktop/src-tauri/src/lib.rs`, всё, чего нет среди `digest_items.preview_file`, удалить `prune_digest_previews`
 
 **Checkpoint**: Independent Test пройден. Коммит фазы.
 

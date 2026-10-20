@@ -3,6 +3,7 @@ import { SearchPanel } from "./SearchPanel";
 import { FilterIndicator } from "./FilterIndicator";
 import { filterStore, searchOpenStore } from "@/lib/search";
 import { EMPTY_FILTER } from "@/lib/filter";
+import { modeStore } from "@/lib/mode";
 import { useEvents } from "@/components/events/EventsProvider";
 import { useQuery } from "@/lib/useQuery";
 import { getEventsInRange, type TimelineEvent } from "@/db/queries/events";
@@ -20,6 +21,7 @@ export function SearchHost() {
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
+      if (modeStore.get() === "digest") return;
       const t = e.target as HTMLElement | null;
       const editable =
         t?.tagName === "INPUT" || t?.tagName === "TEXTAREA" || t?.isContentEditable;

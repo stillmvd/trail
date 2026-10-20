@@ -101,6 +101,35 @@ export async function setPreview(id: number, file: string): Promise<void> {
   ]);
 }
 
+export async function pruneItemsBefore(cutoff: string): Promise<void> {
+  const db = await getDb();
+  await db.execute(
+    `DELETE FROM digest_items
+     WHERE found_at < ?
+       AND id NOT IN (SELECT item_id FROM digest_entries)
+       AND id NOT IN (SELECT item_id FROM digest_saved)
+       AND id NOT IN (SELECT item_id FROM digest_reactions)`,
+    [cutoff],
+  );
+}
+
+export async function expirePreviewsBefore(cutoff: string): Promise<void> {
+  const db = await getDb();
+  await db.execute(
+    `UPDATE digest_items SET preview_file = NULL, preview_at = NULL
+     WHERE preview_file IS NOT NULL AND preview_at < ?`,
+    [cutoff],
+  );
+}
+
+export async function previewFiles(): Promise<string[]> {
+  const db = await getDb();
+  const rows = await db.select<{ preview_file: string }[]>(
+    `SELECT preview_file FROM digest_items WHERE preview_file IS NOT NULL`,
+  );
+  return rows.map((r) => r.preview_file);
+}
+
 export async function searchItems(query: string, limit = 100): Promise<DigestItem[]> {
   const db = await getDb();
   const like = `%${query.trim()}%`;

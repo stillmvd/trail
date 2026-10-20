@@ -10,6 +10,7 @@ import { loadDigestConfig, STATE_KEYS } from "./config";
 import { buildPrompt, dedupe, parseSelection, topicsFromInterests } from "./pick";
 import { settleLimited } from "./limit";
 import { fetchPreviews } from "./previews";
+import { pruneDigest } from "./prune";
 import { ensureSeeded } from "./seed";
 import { fromGithub, fromHackerNews, fromReddit, fromRss, type Fetched } from "./sources";
 import { bumpDigestVersion, DEFAULT_DIGEST_MODEL, digestModelStore, digestRunStore, digestUnseenStore, notifyDigestStore } from "./stores";
@@ -195,6 +196,9 @@ async function run(manual: boolean): Promise<CollectResult> {
   since = performance.now();
   await fetchPreviews(selection.main.map((m) => m.item));
   mark("превью", since);
+  await pruneDigest(config).catch((e) => {
+    if (import.meta.env.DEV) console.warn("[digest] чистка", e);
+  });
   await setSetting(STATE_KEYS.lastAttemptAt, new Date().toISOString());
   await setSetting(STATE_KEYS.lastError, "");
   digestRunStore.set({ state: "idle" });

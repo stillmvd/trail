@@ -39,6 +39,16 @@ fn prune_digest_previews(app: tauri::AppHandle, names: Vec<String>) -> Result<()
 }
 
 #[tauri::command]
+fn list_digest_previews(app: tauri::AppHandle) -> Result<Vec<String>, String> {
+    let Ok(entries) = fs::read_dir(digest_cache_dir(&app)?) else {
+        return Ok(Vec::new());
+    };
+    Ok(entries
+        .filter_map(|e| e.ok()?.file_name().into_string().ok())
+        .collect())
+}
+
+#[tauri::command]
 fn delete_media(app: tauri::AppHandle, name: String) -> Result<(), String> {
     let path = app
         .path()
@@ -463,6 +473,7 @@ pub fn run() {
             delete_media,
             save_digest_preview,
             prune_digest_previews,
+            list_digest_previews,
             create_backup,
             restore_backup,
             #[cfg(windows)]

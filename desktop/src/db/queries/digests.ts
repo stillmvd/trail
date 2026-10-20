@@ -154,6 +154,26 @@ export async function markEntryOpened(digestId: number, itemId: number): Promise
   );
 }
 
+export async function allMainOpened(digestId: number): Promise<boolean> {
+  const db = await getDb();
+  const rows = await db.select<{ left: number }[]>(
+    `SELECT COUNT(*) AS left FROM digest_entries e
+     LEFT JOIN digest_reactions r ON r.item_id = e.item_id
+     WHERE e.digest_id = ? AND e.tier = 'main' AND e.opened_at IS NULL AND COALESCE(r.value, 0) <> -1`,
+    [digestId],
+  );
+  return rows[0]?.left === 0;
+}
+
+export async function pruneDigestsBefore(cutoff: string): Promise<void> {
+  const db = await getDb();
+  await db.execute(
+    `DELETE FROM digest_entries WHERE digest_id IN (SELECT id FROM digests WHERE created_at < ?)`,
+    [cutoff],
+  );
+  await db.execute(`DELETE FROM digests WHERE created_at < ?`, [cutoff]);
+}
+
 export async function markDigestViewed(id: number): Promise<void> {
   const db = await getDb();
   await db.execute(`UPDATE digests SET viewed_at = COALESCE(viewed_at, ?) WHERE id = ?`, [
