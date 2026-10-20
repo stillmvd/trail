@@ -38,6 +38,7 @@ function ActButton({
 }
 
 const IDLE = "bg-surface-2 text-muted hover:text-app-text";
+const SECONDARY = "text-[var(--ds-text-secondary)]";
 
 export function DigestCard({
   entry,
@@ -81,9 +82,13 @@ export function DigestCard({
           <span className="line-clamp-3 text-[15px] leading-[1.3] font-semibold tracking-[-0.01em] text-app-text">
             {entry.title}
           </span>
-          {entry.why && <span className="line-clamp-3 text-[13px] leading-[1.35] text-muted">{entry.why}</span>}
-          <span className="truncate text-[12.5px] text-[var(--ds-text-faint)]">
-            <b className="font-semibold text-muted">{entry.source}</b>
+          {entry.why && (
+            <span className={`line-clamp-3 text-[13px] leading-[1.35] ${selected ? SECONDARY : "text-muted"}`}>
+              {entry.why}
+            </span>
+          )}
+          <span className={`truncate text-[12.5px] ${selected ? SECONDARY : "text-[var(--ds-text-faint)]"}`}>
+            <b className={`font-semibold ${selected ? "text-app-text" : "text-muted"}`}>{entry.source}</b>
             {date && ` · ${date}`}
           </span>
         </span>
@@ -100,7 +105,7 @@ export function DigestCard({
         <ActButton
           label="Не нравится"
           onClick={() => onReact(-1)}
-          className={entry.reaction === -1 ? "bg-surface-active text-app-text" : IDLE}
+          className={entry.reaction === -1 ? "bg-rust text-ink" : IDLE}
         >
           <ThumbsDown size={16} strokeWidth={1.75} />
         </ActButton>

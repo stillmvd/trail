@@ -1,6 +1,7 @@
 <!--
 Sync Impact Report
-- Version change: (template) → 1.0.0
+- Version change: 1.0.0 → 1.1.0 (III: `rust` допускается и для отклонённого пользователем)
+- Previous: (template) → 1.0.0
 - Modified principles: все плейсхолдеры заменены
   I. Данные только через db/queries
   II. Состояние во внешних сторах
@@ -44,7 +45,9 @@ Sync Impact Report
 - Цвет — только токены `--rg-*` / `--ds-*` (OKLCH) и утилиты `bg-surface-0..3`,
   `bg-surface-active`, `text-app-text`, `text-muted`, `border-line`, `amber`, `ink`,
   `rust`, `text-accent-ink`. Произвольных цветов нет; светлая тема — `[data-theme="light"]`.
-- `rust` (`--ds-danger`) — ТОЛЬКО ошибка, удаление, опасное действие.
+- `rust` (`--ds-danger`) — ТОЛЬКО ошибка, удаление, опасное действие и отклонённое
+  пользователем (активный дизлайк в «Сводке» — заливка `rust` с иконкой `ink`;
+  расширение правила решено пользователем 2026-10-20, это не нарушение).
 - Акцент — только у главного действия. Акцент как цвет текста или иконки —
   `--ds-accent-ink`, `--rg-amber` — только заливка.
 - Радиусы и тени — только шкала `--ds-radius-*` / `--shadow-*` из `styles.css`,
@@ -105,4 +108,4 @@ Sync Impact Report
 - Каждый план (`/speckit-plan`) проходит Constitution Check по пяти принципам;
   нарушение допускается только с обоснованием в Complexity Tracking.
 
-**Version**: 1.0.0 | **Ratified**: 2026-10-20 | **Last Amended**: 2026-10-20
+**Version**: 1.1.0 | **Ratified**: 2026-10-20 | **Last Amended**: 2026-10-20
