@@ -13,6 +13,31 @@ fn save_media(app: tauri::AppHandle, name: String, data: Vec<u8>) -> Result<Stri
     Ok(name)
 }
 
+fn digest_cache_dir(app: &tauri::AppHandle) -> Result<std::path::PathBuf, String> {
+    Ok(app
+        .path()
+        .app_data_dir()
+        .map_err(|e| e.to_string())?
+        .join("digest-cache"))
+}
+
+#[tauri::command]
+fn save_digest_preview(app: tauri::AppHandle, name: String, data: Vec<u8>) -> Result<String, String> {
+    let dir = digest_cache_dir(&app)?;
+    fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
+    fs::write(dir.join(&name), data).map_err(|e| e.to_string())?;
+    Ok(name)
+}
+
+#[tauri::command]
+fn prune_digest_previews(app: tauri::AppHandle, names: Vec<String>) -> Result<(), String> {
+    let dir = digest_cache_dir(&app)?;
+    for name in names {
+        let _ = fs::remove_file(dir.join(name));
+    }
+    Ok(())
+}
+
 #[tauri::command]
 fn delete_media(app: tauri::AppHandle, name: String) -> Result<(), String> {
     let path = app
@@ -430,6 +455,8 @@ pub fn run() {
             comfy_running,
             save_media,
             delete_media,
+            save_digest_preview,
+            prune_digest_previews,
             create_backup,
             restore_backup,
             #[cfg(windows)]

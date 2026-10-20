@@ -100,4 +100,76 @@ CREATE TABLE IF NOT EXISTS settings (
   key TEXT PRIMARY KEY,
   value TEXT NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS digest_sources (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  kind TEXT NOT NULL,
+  value TEXT NOT NULL,
+  title TEXT,
+  encoding TEXT,
+  enabled INTEGER NOT NULL DEFAULT 1,
+  sort_order INTEGER NOT NULL DEFAULT 0,
+  last_ok_at TEXT,
+  last_error TEXT,
+  last_error_at TEXT,
+  last_count INTEGER NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(kind, value)
+);
+
+CREATE TABLE IF NOT EXISTS digest_items (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  url TEXT NOT NULL UNIQUE,
+  title TEXT NOT NULL,
+  source TEXT NOT NULL,
+  source_id INTEGER REFERENCES digest_sources(id) ON DELETE SET NULL,
+  domain TEXT NOT NULL,
+  published_at TEXT,
+  found_at TEXT NOT NULL,
+  blurb TEXT,
+  image_url TEXT,
+  preview_file TEXT,
+  preview_at TEXT,
+  imported INTEGER NOT NULL DEFAULT 0
+);
+CREATE INDEX IF NOT EXISTS idx_digest_items_found ON digest_items(found_at);
+CREATE INDEX IF NOT EXISTS idx_digest_items_domain ON digest_items(domain);
+
+CREATE TABLE IF NOT EXISTS digests (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  date TEXT NOT NULL UNIQUE,
+  created_at TEXT NOT NULL,
+  viewed_at TEXT,
+  model TEXT NOT NULL,
+  candidates INTEGER NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS digest_entries (
+  digest_id INTEGER NOT NULL REFERENCES digests(id) ON DELETE CASCADE,
+  item_id INTEGER NOT NULL REFERENCES digest_items(id) ON DELETE CASCADE,
+  tier TEXT NOT NULL,
+  topic TEXT,
+  why TEXT,
+  position INTEGER NOT NULL,
+  added_at TEXT NOT NULL,
+  opened_at TEXT,
+  PRIMARY KEY (digest_id, item_id)
+);
+CREATE INDEX IF NOT EXISTS idx_digest_entries_item ON digest_entries(item_id);
+
+CREATE TABLE IF NOT EXISTS digest_reactions (
+  item_id INTEGER PRIMARY KEY REFERENCES digest_items(id) ON DELETE CASCADE,
+  value INTEGER NOT NULL,
+  created_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS digest_saved (
+  item_id INTEGER PRIMARY KEY REFERENCES digest_items(id) ON DELETE CASCADE,
+  created_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS digest_bans (
+  domain TEXT PRIMARY KEY,
+  created_at TEXT NOT NULL
+);
 `;

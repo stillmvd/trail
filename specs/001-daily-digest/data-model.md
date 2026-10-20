@@ -116,6 +116,7 @@
 | `digest_keep_previews_days` | 90 |
 | `digest_seeded` | `1` после импорта Cairn |
 | `digest_last_attempt_at` / `digest_last_error` | состояние последней попытки |
+| `digest_last_success_at` | момент последнего успешного прогона; кандидаты прогона = `found_at` позже него (повтор после сбоя видит те же материалы, добор — только новые) |
 | `digest_attempts_date` / `digest_attempts_count` | неудачные плановые попытки за день (≤ 3, интервал 15 мин); счётчик сбрасывается со сменой даты |
 
 localStorage (`createLocalStore`, не в бэкапе): `trail.imagegen.openRouterKey` (общий ключ OpenRouter,

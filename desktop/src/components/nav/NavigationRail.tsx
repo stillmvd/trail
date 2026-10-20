@@ -5,6 +5,7 @@ import {
   Target,
   Bell,
   Cake,
+  Newspaper,
   Search,
   Settings,
   type LucideIcon,
@@ -19,6 +20,7 @@ const DESTINATIONS: { value: ViewMode; label: string; icon: LucideIcon }[] = [
   { value: "tracking", label: "Отслеживание", icon: Target },
   { value: "reminders", label: "Напоминания", icon: Bell },
   { value: "birthdays", label: "Дни рождения", icon: Cake },
+  { value: "digest", label: "Сводка", icon: Newspaper },
 ];
 
 function RailButton({
