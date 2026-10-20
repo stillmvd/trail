@@ -70,6 +70,10 @@ export function trimVerdict(why: string | null | undefined): string {
   return /(?:^|\s)(?:того|том|тем|потому|так|для|о)$/iu.test(cut) ? (why || "").trim() : cut;
 }
 
+export function capitalizeCyrillic(text: string): string {
+  return /^[а-яё]/u.test(text) ? text[0].toUpperCase() + text.slice(1) : text;
+}
+
 type RawPick = { i?: unknown; t?: unknown; why?: unknown; topic?: unknown };
 
 export function resolvePicks<T extends Candidate>(
@@ -200,7 +204,11 @@ export function parseSelection<T extends Candidate>(
     .map(({ item, pick }) => {
       const topic = typeof pick.topic === "string" ? pick.topic.trim() : "";
       const known = topics.find((t) => normalize(t) === normalize(topic));
-      return { item, why: trimVerdict(typeof pick.why === "string" ? pick.why : ""), topic: known ?? fallback };
+      return {
+        item,
+        why: capitalizeCyrillic(trimVerdict(typeof pick.why === "string" ? pick.why : "")),
+        topic: known ?? fallback,
+      };
     });
   const taken = new Set(main.map((m) => m.item.url));
   const near = resolvePicks(Array.isArray(parsed.near) ? parsed.near : [], candidates)

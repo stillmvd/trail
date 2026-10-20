@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import {
   buildPrompt,
+  capitalizeCyrillic,
   dedupe,
   extractJson,
   parseSelection,
@@ -62,6 +63,14 @@ assert.equal(
   "Память тает из-за того, что позволяет кэшу расти",
 );
 assert.equal(trimVerdict("Кэш живёт в памяти воркера — что демонстрирует подход"), "Кэш живёт в памяти воркера");
+
+assert.equal(capitalizeCyrillic("расширение VS Code для корпоративной LLM"), "Расширение VS Code для корпоративной LLM");
+assert.equal(capitalizeCyrillic("ёмкость батареи выросла"), "Ёмкость батареи выросла");
+assert.equal(capitalizeCyrillic("iOS 26 наконец умеет"), "iOS 26 наконец умеет");
+assert.equal(capitalizeCyrillic("npm сломал сборку"), "npm сломал сборку");
+assert.equal(capitalizeCyrillic("8 минут вместо 28"), "8 минут вместо 28");
+assert.equal(capitalizeCyrillic("Уже с заглавной"), "Уже с заглавной");
+assert.equal(capitalizeCyrillic(""), "");
 
 const cairnInterests = [
   "Фронтенд и TypeScript: React, сборка, производительность, инструменты разработчика",
