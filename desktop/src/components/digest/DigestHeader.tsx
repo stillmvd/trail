@@ -1,8 +1,12 @@
 import { useState, type RefObject } from "react";
 import { format, parseISO } from "date-fns";
 import { ru } from "date-fns/locale";
-import { Check, MoreHorizontal, RefreshCw, Search, Settings } from "lucide-react";
+import { Archive, Check, MoreHorizontal, RefreshCw, Search, Settings, Star } from "lucide-react";
 import { ContextMenu } from "@/components/ui/ContextMenu";
+import { pluralRu } from "@/lib/duration";
+
+const ROUND =
+  "grid h-10 w-10 shrink-0 cursor-pointer place-items-center rounded-full bg-surface-2 transition-[background-color,color,scale] duration-150 ease-[var(--rg-ease)] hover:bg-surface-3 active:scale-[0.96]";
 
 function Progress({ read, total }: { read: number; total: number }) {
   const p = total ? Math.round((read / total) * 100) : 0;
@@ -36,7 +40,13 @@ export function DigestHeader({
   onMarkViewed,
   onCollect,
   onSettings,
+  saved,
+  onToggleSaved,
+  onArchive,
 }: {
+  saved: { count: number } | null;
+  onToggleSaved: () => void;
+  onArchive: () => void;
   date: string;
   viewed: boolean | null;
   progress: { read: number; total: number } | null;
@@ -54,16 +64,26 @@ export function DigestHeader({
     <div className="flex min-w-0 flex-wrap items-center gap-x-4 gap-y-3">
       <div className="flex shrink-0 flex-col gap-0.5">
         <h2 className="text-[32px] leading-[1.04] font-light tracking-[-0.02em] whitespace-nowrap text-app-text">
-          <b className="font-bold">{day}</b> {month}
+          {saved ? (
+            <b className="font-bold">Сохранённое</b>
+          ) : (
+            <>
+              <b className="font-bold">{day}</b> {month}
+            </>
+          )}
         </h2>
-        {viewed !== null && (
+        {saved ? (
+          <span className="text-[12.5px] font-medium text-[var(--ds-text-faint)]">
+            {saved.count ? `${saved.count} ${pluralRu(saved.count, ["материал", "материала", "материалов"])}` : "пусто"}
+          </span>
+        ) : viewed !== null && (
           <span className="text-[12.5px] font-medium text-[var(--ds-text-faint)]">
             {viewed ? "просмотрена" : "новая"}
           </span>
         )}
       </div>
       <span className="min-w-2 flex-1" />
-      {progress && <Progress read={progress.read} total={progress.total} />}
+      {progress && !saved && <Progress read={progress.read} total={progress.total} />}
 
       <div className="ml-auto flex min-w-0 shrink-0 items-center gap-2">
         <label className="flex h-10 min-w-[150px] flex-[0_1_240px] items-center gap-2.5 rounded-full bg-surface-2 px-4">
@@ -82,7 +102,21 @@ export function DigestHeader({
             className="min-w-0 flex-1 bg-transparent text-sm text-app-text outline-none placeholder:text-muted"
           />
         </label>
-        {viewed !== null &&
+        <button
+          type="button"
+          aria-label="Сохранённое"
+          title="Сохранённое"
+          aria-pressed={saved !== null}
+          onClick={onToggleSaved}
+          className={`${ROUND} ${saved ? "text-accent-ink" : "text-app-text"}`}
+        >
+          <Star size={18} strokeWidth={1.75} fill={saved ? "currentColor" : "none"} />
+        </button>
+        <button type="button" aria-label="Прошлые сводки" title="Прошлые сводки" onClick={onArchive} className={`${ROUND} text-app-text`}>
+          <Archive size={18} strokeWidth={1.75} />
+        </button>
+        {!saved &&
+          viewed !== null &&
           (viewed ? (
             <span className="inline-flex h-10 items-center gap-2 rounded-full px-[18px] text-sm font-semibold whitespace-nowrap text-muted shadow-[inset_0_0_0_1px_var(--rg-line)]">
               <Check size={18} strokeWidth={1.75} />
@@ -98,19 +132,21 @@ export function DigestHeader({
               Просмотрено
             </button>
           ))}
-        <button
-          type="button"
-          aria-label="Ещё"
-          title="Ещё"
-          onMouseDown={(e) => menu && e.stopPropagation()}
-          onClick={(e) => {
-            const r = e.currentTarget.getBoundingClientRect();
-            setMenu(menu ? null : { x: r.right - 180, y: r.bottom + 6 });
-          }}
-          className="grid h-10 w-10 shrink-0 cursor-pointer place-items-center rounded-full bg-surface-2 text-app-text transition-[background-color,scale] duration-150 ease-[var(--rg-ease)] hover:bg-surface-3 active:scale-[0.96]"
-        >
-          <MoreHorizontal size={18} strokeWidth={1.75} />
-        </button>
+        {!saved && (
+          <button
+            type="button"
+            aria-label="Ещё"
+            title="Ещё"
+            onMouseDown={(e) => menu && e.stopPropagation()}
+            onClick={(e) => {
+              const r = e.currentTarget.getBoundingClientRect();
+              setMenu(menu ? null : { x: r.right - 180, y: r.bottom + 6 });
+            }}
+            className={`${ROUND} text-app-text`}
+          >
+            <MoreHorizontal size={18} strokeWidth={1.75} />
+          </button>
+        )}
       </div>
 
       <ContextMenu

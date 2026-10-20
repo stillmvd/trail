@@ -16,7 +16,10 @@ import {
   type Digest,
   type DigestEntry,
 } from "@/db/queries/digests";
-import { banDomain, listBans, setReaction, toggleSaved } from "@/db/queries/digestReactions";
+import { banDomain, listBans, listSaved, setReaction, toggleSaved } from "@/db/queries/digestReactions";
+import type { DigestItem } from "@/db/queries/digestItems";
+
+export type SavedItem = DigestItem & { saved_at: string };
 
 export type DigestStatus = {
   config: DigestConfig;
@@ -36,10 +39,12 @@ type DigestCtx = {
   digest: Digest | null;
   entries: DigestEntry[];
   bannedDomains: Set<string>;
+  picked: boolean;
+  saved: SavedItem[];
   selectDigest: (id: number) => void;
   openEntry: (entry: DigestEntry) => Promise<void>;
   react: (entry: DigestEntry, value: 1 | -1) => Promise<void>;
-  toggleStar: (entry: DigestEntry) => Promise<void>;
+  toggleStar: (itemId: number) => Promise<void>;
   ban: (domain: string) => Promise<void>;
   markViewed: () => Promise<void>;
 };
@@ -83,6 +88,8 @@ export function DigestProvider({ children }: { children: ReactNode }) {
   const loadBans = useCallback(() => listBans(), [version]);
   const { data: digests, error } = useQuery(loadDigests);
   const { data: bans } = useQuery(loadBans);
+  const loadSaved = useCallback(() => listSaved(), [version]);
+  const { data: saved } = useQuery(loadSaved);
   const reloadStatus = useCallback(() => loadStatus(), [version, run]);
   const { data: status } = useQuery(reloadStatus);
 
@@ -117,8 +124,8 @@ export function DigestProvider({ children }: { children: ReactNode }) {
     bumpDigestVersion();
   };
 
-  const toggleStar = async (entry: DigestEntry) => {
-    await toggleSaved(entry.item_id);
+  const toggleStar = async (itemId: number) => {
+    await toggleSaved(itemId);
     bumpDigestVersion();
   };
 
@@ -147,6 +154,8 @@ export function DigestProvider({ children }: { children: ReactNode }) {
         digest,
         entries: entries ?? [],
         bannedDomains: new Set((bans ?? []).map((b) => b.domain)),
+        picked: selectedId !== null && digest?.id === selectedId,
+        saved: saved ?? [],
         selectDigest: setSelectedId,
         openEntry,
         react,

@@ -1,6 +1,8 @@
 import { useCallback, useMemo, useRef, useState, type MouseEvent } from "react";
 import { Ban } from "lucide-react";
 import { openUrl } from "@tauri-apps/plugin-opener";
+import { format } from "date-fns";
+import { ru } from "date-fns/locale";
 import { ContextMenu } from "@/components/ui/ContextMenu";
 import { useToast } from "@/components/ui/Toast";
 import { groupDigest, isRead, type DigestGroup } from "@/lib/digest/groups";
@@ -17,10 +19,17 @@ import { DigestCard } from "./DigestCard";
 import { DigestHeader } from "./DigestHeader";
 import { DigestBusy, DigestEmpty, EMPTY_ICONS } from "./DigestEmpty";
 import { DigestRows } from "./DigestRows";
+import { DigestArchive } from "./DigestArchive";
+import { DigestSaved } from "./DigestSaved";
 import { NearList } from "./NearList";
 import { useDigestKeys } from "./useDigestKeys";
 
 const MATERIALS: [string, string, string] = ["материал", "материала", "материалов"];
+
+function dayOf(iso: string | null): string | null {
+  const d = iso ? new Date(iso) : null;
+  return d && !Number.isNaN(d.getTime()) ? format(d, "d MMMM", { locale: ru }) : null;
+}
 
 function GroupHead({ group }: { group: DigestGroup }) {
   const [first, ...rest] = (group.topic || "Без темы").split(" ");
@@ -39,28 +48,47 @@ function GroupHead({ group }: { group: DigestGroup }) {
 }
 
 export function DigestView() {
-  const { digests, digest, entries, topics, bannedDomains, run, status, collect, openEntry, react, toggleStar, ban, markViewed } =
-    useDigest();
+  const {
+    digests,
+    digest,
+    picked,
+    saved,
+    entries,
+    topics,
+    bannedDomains,
+    run,
+    status,
+    collect,
+    selectDigest,
+    openEntry,
+    react,
+    toggleStar,
+    ban,
+    markViewed,
+  } = useDigest();
   const { show } = useToast();
   const hasKey = openRouterKeyStore.use().trim() !== "";
   const [menu, setMenu] = useState<{ x: number; y: number; domain: string } | null>(null);
   const [query, setQuery] = useState("");
+  const [savedView, setSavedView] = useState(false);
+  const [archiveOpen, setArchiveOpen] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
 
   const today = todayISO();
-  const empty = status
-    ? emptyState({
-        today,
-        now: Date.now(),
-        hasToday: digests.some((d) => d.date === today),
-        hasAny: digests.length > 0,
-        hasKey,
-        lastError: status.lastError,
-        lastAttemptAt: status.lastAttemptAt,
-        attemptsToday: status.attemptsToday,
-        config: status.config,
-      })
-    : null;
+  const empty =
+    status && !picked
+      ? emptyState({
+          today,
+          now: Date.now(),
+          hasToday: digests.some((d) => d.date === today),
+          hasAny: digests.length > 0,
+          hasKey,
+          lastError: status.lastError,
+          lastAttemptAt: status.lastAttemptAt,
+          attemptsToday: status.attemptsToday,
+          config: status.config,
+        })
+      : null;
   const shown = empty ? null : digest;
 
   const groups = useMemo(() => (shown ? groupDigest(shown, entries, topics) : []), [shown, entries, topics]);
@@ -79,10 +107,10 @@ export function DigestView() {
   };
   const openSettings = () => modeStore.set("settings");
 
-  const selectedId = useDigestKeys(q ? [] : main, {
+  const selectedId = useDigestKeys(q || savedView || archiveOpen ? [] : main, {
     open: openEntry,
     react,
-    star: toggleStar,
+    star: (entry) => toggleStar(entry.item_id),
     search: () => searchRef.current?.focus(),
   });
 
@@ -110,16 +138,27 @@ export function DigestView() {
           onMarkViewed={shown ? markViewed : null}
           onCollect={runCollect}
           onSettings={openSettings}
+          saved={savedView ? { count: saved.length } : null}
+          onToggleSaved={() => setSavedView((v) => !v)}
+          onArchive={() => setArchiveOpen(true)}
         />
 
         {q ? (
           results && results.length > 0 ? (
             <DigestRows
-              rows={results.map((r) => ({ key: r.id, title: r.title, source: r.source, onOpen: () => openUrl(r.url) }))}
+              rows={results.map((r) => ({
+                key: r.id,
+                title: r.title,
+                source: r.source,
+                meta: dayOf(r.published_at) ?? dayOf(r.found_at) ?? "",
+                onOpen: () => openUrl(r.url),
+              }))}
             />
           ) : (
             results && <p className="text-center text-[13px] text-muted">Ничего не нашлось</p>
           )
+        ) : savedView ? (
+          <DigestSaved items={saved} onUnsave={toggleStar} />
         ) : (
           <>
             {empty && run.state !== "running" && (
@@ -144,7 +183,7 @@ export function DigestView() {
                       banned={bannedDomains.has(entry.domain)}
                       onOpen={() => openEntry(entry)}
                       onReact={(value) => react(entry, value)}
-                      onStar={() => toggleStar(entry)}
+                      onStar={() => toggleStar(entry.item_id)}
                       onMenu={(e) => openMenu(e, entry)}
                     />
                   ))}
@@ -156,6 +195,18 @@ export function DigestView() {
           </>
         )}
       </div>
+
+      <DigestArchive
+        open={archiveOpen}
+        digests={digests}
+        currentId={savedView ? null : (shown?.id ?? null)}
+        onPick={(id) => {
+          selectDigest(id);
+          setSavedView(false);
+          setArchiveOpen(false);
+        }}
+        onClose={() => setArchiveOpen(false)}
+      />
 
       <ContextMenu
         open={menu !== null}

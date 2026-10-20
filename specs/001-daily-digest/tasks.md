@@ -134,7 +134,7 @@
 **Independent Test**: отметить все `main` → сводка просмотрена, точка гаснет; звезда → «Сохранённое» переживает чистку сводки; поиск раздела находит прошлые материалы, общий Ctrl+F — нет.
 
 - [x] T038 [US4] Авто-просмотр: после `markEntryOpened`/дизлайка, если у всех `main`-позиций есть `opened_at` или реакция -1 → `markDigestViewed` и обновить `digestUnseenStore` (`DigestProvider.tsx`)
-- [ ] T039 [US4] `desktop/src/components/digest/DigestArchive.tsx` по стенду 006: список сводок (новая выделена `bg-surface-active`), переключение сводки, «Сохранённое» (`listSaved`); звезда на карточке → `toggleSaved`
+- [x] T039 [US4] `desktop/src/components/digest/DigestArchive.tsx` по стенду 006: шторка `SideSheet` «Прошлые сводки» по значку в шапке, группы «На этой неделе / Раньше», строка — дата и число материалов, новая — жёлтый чип; «Сохранённое» (`DigestSaved.tsx`) — значок-звезда в шапке, карточки без обложек, звезда снимает
 - [x] T040 [US4] Поиск раздела: поле в `DigestHeader.tsx` → `searchItems(query)`; `desktop/src/components/search/SearchHost.tsx:26–29` не перехватывает `/` и Ctrl+F при `mode === "digest"`, раздел фокусирует своё поле
 - [x] T041 [US4] `desktop/src/lib/digest/prune.ts`: после каждого успешного сбора — порядок из `data-model.md` «Чистка»: сводки старше `digest_keep_digests_days` (365) → позиции и сводки; кандидаты старше `digest_keep_candidates_days` (60) без позиций, звезды и реакции; превью старше `digest_keep_previews_days` (90) → `prune_digest_previews` + `preview_file = NULL`; затем проход по сиротам: новая Rust-команда `list_digest_previews() -> Vec<String>` (имена файлов `digest-cache/`) в `desktop/src-tauri/src/lib.rs`, всё, чего нет среди `digest_items.preview_file`, удалить `prune_digest_previews`
 
