@@ -90,11 +90,11 @@
 
 **Independent Test**: открыть сводку, пройти j/k, Enter открывает браузер и помечает карточку; «Было близко: N» раскрывается.
 
-- [ ] T028 [US2] `desktop/src/components/digest/DigestCard.tsx` по выбору стенда 004: превью `previewSrc` или `CoverPlaceholder`, заголовок, источник, дата публикации (`date-fns`, по-русски), `why`; клик → `openUrl` (`@tauri-apps/plugin-opener`) + `markEntryOpened`; spring `bounce: 0`, `active:scale-[0.96]`
-- [ ] T029 [P] [US2] `desktop/src/components/digest/NearList.tsx`: свёрнутая строка «Было близко: N» → заголовки-ссылки (`openUrl`), без превью и `why`; раскрытие — только `transform`/`opacity`
+- [x] T028 [US2] `desktop/src/components/digest/DigestCard.tsx` по выбору стенда 004: превью `previewSrc` или `CoverPlaceholder`, заголовок, источник, дата публикации (`date-fns`, по-русски), `why`; клик → `openUrl` (`@tauri-apps/plugin-opener`) + `markEntryOpened`; spring `bounce: 0`, `active:scale-[0.96]`
+- [x] T029 [P] [US2] `desktop/src/components/digest/NearList.tsx`: свёрнутая строка «Было близко: N» → заголовки-ссылки (`openUrl`), без превью и `why`; раскрытие — только `transform`/`opacity`
 - [x] T030 [US2] `desktop/src/components/digest/DigestProvider.tsx`: контекст — список сводок, текущая сводка, позиции, реакции, звёзды, CRUD через `db/queries/digest*.ts`, обновление `digestUnseenStore`; слушатель `open-digest`
-- [ ] T031 [US2] `desktop/src/components/digest/DigestView.tsx` + `desktop/src/pages/DigestPage.tsx`: группы по `topic` в порядке `topicsFromInterests(digest_interests)` (порядок интересов, «Любопытное» последней), внутри — по `position`; позиции добора (`added_at` позже `digests.created_at` > 1 мин) — отдельными группами «добавлено в ЧЧ:ММ» по моменту добавления, вид по стенду 005; пустые состояния по стенду 005
-- [ ] T032 [US2] `desktop/src/components/digest/useDigestKeys.ts`: по `KeyboardEvent.code` вне полей ввода — `KeyJ`/`KeyK` следующая/предыдущая (через темы), `Enter` открыть, `KeyL` лайк, `KeyD` дизлайк, `KeyS` звезда; выбранная карточка — `bg-surface-active`, прокрутка в видимую область
+- [x] T031 [US2] `desktop/src/components/digest/DigestView.tsx` + `desktop/src/pages/DigestPage.tsx`: группы по `topic` в порядке `topicsFromInterests(digest_interests)` (порядок интересов, «Любопытное» последней), внутри — по `position`; позиции добора (`added_at` позже `digests.created_at` > 1 мин) — отдельными группами «добавлено в ЧЧ:ММ» по моменту добавления, вид по стенду 005; пустые состояния по стенду 005
+- [x] T032 [US2] `desktop/src/components/digest/useDigestKeys.ts`: по `KeyboardEvent.code` вне полей ввода — `KeyJ`/`KeyK` следующая/предыдущая (через темы), `Enter` открыть, `KeyL` лайк, `KeyD` дизлайк, `KeyS` звезда; выбранная карточка — `bg-surface-active`, прокрутка в видимую область
 
 **Checkpoint**: Independent Test пройден. Коммит фазы.
 
@@ -107,7 +107,7 @@
 **Independent Test**: точка горит, пока сегодняшняя не просмотрена; «Собрать сейчас» при существующей сводке дописывает новые материалы группой «добавлено в ЧЧ:ММ» без вопросов; добор в просмотренную сводку возвращает точку.
 
 - [ ] T033 [US1] `desktop/src/components/digest/DigestHeader.tsx` по стенду 005: дата, счётчики, «Собрать сейчас» (`collectDigest({ manual: true })`, без подтверждения: при сводке за сегодня это добор), «Отметить просмотренной», состояния `digestRunStore` и `digest_last_error` (в т.ч. «Нет ключа OpenRouter» со ссылкой в Настройки)
-- [ ] T034 [US1] Точка на пункте «Сводка» в `desktop/src/components/nav/NavigationRail.tsx` по `digestUnseenStore` (небольшой кружок `amber` в углу иконки; без рамок)
+- [x] T034 [US1] Точка на пункте «Сводка» в `desktop/src/components/nav/NavigationRail.tsx` по `digestUnseenStore` (небольшой кружок `amber` в углу иконки; без рамок)
 
 **Checkpoint**: MVP — US1 + US2 целиком. Коммит фазы.
 
@@ -119,8 +119,8 @@
 
 **Independent Test**: дизлайкнуть 3 карточки одного источника и забанить домен → следующий сбор без домена, в промпте блоки «брал/отклонял» и серия источника.
 
-- [ ] T035 [US3] Лайк/дизлайк на `DigestCard.tsx` (повтор снимает, `setReaction(itemId, null)`); дизлайк = просмотрено (`markEntryOpened`)
-- [ ] T036 [US3] Контекстное меню карточки (`desktop/src/components/ui/ContextMenu.tsx`): «Больше не показывать этот домен» → `banDomain(domain)`, карточки домена в текущей сводке гаснут
+- [x] T035 [US3] Лайк/дизлайк на `DigestCard.tsx` (повтор снимает, `setReaction(itemId, null)`); дизлайк = просмотрено (`markEntryOpened`)
+- [x] T036 [US3] Контекстное меню карточки (`desktop/src/components/ui/ContextMenu.tsx`): «Больше не показывать этот домен» → `banDomain(domain)`, карточки домена в текущей сводке гаснут
 - [x] T037 [US3] Проверить, что `collect.ts` передаёт в `buildPrompt` `recentReactions(15)` и `dislikeStreaksBySource()`, а `freshCandidates` исключает `digest_bans`; в DEV — лог промпта в консоль
 
 **Checkpoint**: Independent Test пройден. Коммит фазы.

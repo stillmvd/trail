@@ -2,6 +2,8 @@ import { createContext, useCallback, useContext, useState, type ReactNode } from
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { useQuery } from "@/lib/useQuery";
 import { refreshUnseen } from "@/lib/digest/collect";
+import { loadDigestConfig } from "@/lib/digest/config";
+import { topicsFromInterests } from "@/lib/digest/pick";
 import { bumpDigestVersion, digestVersionStore } from "@/lib/digest/stores";
 import {
   allMainOpened,
@@ -15,7 +17,10 @@ import {
 import { banDomain, listBans, setReaction, toggleSaved } from "@/db/queries/digestReactions";
 
 type DigestCtx = {
+  loaded: boolean;
+  error: string | null;
   digests: Digest[];
+  topics: string[];
   digest: Digest | null;
   entries: DigestEntry[];
   bannedDomains: Set<string>;
@@ -35,6 +40,8 @@ export function useDigest() {
   return ctx;
 }
 
+const loadTopics = async () => topicsFromInterests((await loadDigestConfig()).interests);
+
 async function viewIfDone(digestId: number) {
   if (!(await allMainOpened(digestId))) return;
   await markDigestViewed(digestId);
@@ -47,8 +54,9 @@ export function DigestProvider({ children }: { children: ReactNode }) {
 
   const loadDigests = useCallback(() => listDigests(), [version]);
   const loadBans = useCallback(() => listBans(), [version]);
-  const { data: digests } = useQuery(loadDigests);
+  const { data: digests, error } = useQuery(loadDigests);
   const { data: bans } = useQuery(loadBans);
+  const { data: topics } = useQuery(loadTopics);
 
   const digest = digests?.find((d) => d.id === selectedId) ?? digests?.[0] ?? null;
   const digestId = digest?.id ?? null;
@@ -95,7 +103,10 @@ export function DigestProvider({ children }: { children: ReactNode }) {
   return (
     <Context.Provider
       value={{
+        loaded: digests !== null && (digestId === null || entries !== null),
+        error,
         digests: digests ?? [],
+        topics: topics ?? [],
         digest,
         entries: entries ?? [],
         bannedDomains: new Set((bans ?? []).map((b) => b.domain)),

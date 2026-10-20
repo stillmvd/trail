@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { modeStore, type ViewMode } from "../../lib/mode";
 import { searchOpenStore } from "../../lib/search";
+import { digestUnseenStore } from "../../lib/digest/stores";
 
 const DESTINATIONS: { value: ViewMode; label: string; icon: LucideIcon }[] = [
   { value: "timeline", label: "Таймлайн", icon: Waypoints },
@@ -27,11 +28,13 @@ function RailButton({
   label,
   icon: Icon,
   active,
+  dot,
   onClick,
 }: {
   label: string;
   icon: LucideIcon;
   active?: boolean;
+  dot?: boolean;
   onClick: () => void;
 }) {
   return (
@@ -41,19 +44,21 @@ function RailButton({
       aria-label={label}
       title={label}
       aria-current={active ? "page" : undefined}
-      className={`flex h-11 w-11 cursor-pointer items-center justify-center rounded-full transition-[background-color,color,scale] duration-150 ease-[var(--rg-ease)] active:scale-[0.96] ${
+      className={`relative flex h-11 w-11 cursor-pointer items-center justify-center rounded-full transition-[background-color,color,scale] duration-150 ease-[var(--rg-ease)] active:scale-[0.96] ${
         active
           ? "bg-amber text-ink"
           : "text-muted hover:bg-surface-2 hover:text-app-text"
       }`}
     >
       <Icon size={20} strokeWidth={1.75} />
+      {dot && !active && <span className="absolute top-2 right-2 h-2 w-2 rounded-full bg-amber" />}
     </button>
   );
 }
 
 export function NavigationRail() {
   const mode = modeStore.use();
+  const digestUnseen = digestUnseenStore.use();
 
   return (
     <nav
@@ -66,6 +71,7 @@ export function NavigationRail() {
           label={label}
           icon={icon}
           active={mode === value}
+          dot={value === "digest" && digestUnseen}
           onClick={() => modeStore.set(value)}
         />
       ))}
