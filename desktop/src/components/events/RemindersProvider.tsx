@@ -4,6 +4,7 @@ import { useToast } from "@/components/ui/Toast";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { bumpDataVersion } from "@/lib/dataVersion";
 import { modeStore } from "@/lib/mode";
+import { showDigestFeed } from "@/lib/digest/stores";
 import { snoozePlusHour } from "@/lib/reminders";
 import { TIMELINE_MIN_DATE, TIMELINE_MAX_DATE, isValidISODate } from "@/lib/constants";
 import {
@@ -83,7 +84,7 @@ export function RemindersProvider({ children }: { children: ReactNode }) {
         return;
       }
       if (payload.kind === "digest") {
-        modeStore.set("digest");
+        showDigestFeed();
         return;
       }
       modeStore.set("reminders");

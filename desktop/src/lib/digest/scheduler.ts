@@ -4,7 +4,7 @@ import { format } from "date-fns";
 import { getSetting } from "@/db/queries/settings";
 import { getDigestByDate } from "@/db/queries/digests";
 import { todayISO } from "../dates";
-import { modeStore } from "../mode";
+import { showDigestFeed } from "./stores";
 import { loadDigestConfig, STATE_KEYS } from "./config";
 import { MAX_ATTEMPTS, RETRY_AFTER_MS } from "./emptyState";
 import { collectDigest, isCollecting, refreshUnseen } from "./collect";
@@ -38,7 +38,7 @@ export function useDigestScheduler() {
     const timer = setInterval(() => {
       tick().catch(() => {});
     }, CHECK_INTERVAL_MS);
-    const unlisten = listen("open-digest", () => modeStore.set("digest"));
+    const unlisten = listen("open-digest", showDigestFeed);
     if (import.meta.env.DEV) {
       (window as unknown as { __digestCollect: () => unknown }).__digestCollect = () =>
         collectDigest({ manual: true });

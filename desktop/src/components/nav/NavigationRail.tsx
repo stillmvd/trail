@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import { modeStore, type ViewMode } from "../../lib/mode";
 import { searchOpenStore } from "../../lib/search";
-import { digestUnseenStore } from "../../lib/digest/stores";
+import { digestUnseenStore, showDigestFeed } from "../../lib/digest/stores";
 
 const DESTINATIONS: { value: ViewMode; label: string; icon: LucideIcon }[] = [
   { value: "timeline", label: "Таймлайн", icon: Waypoints },
@@ -72,7 +72,7 @@ export function NavigationRail() {
           icon={icon}
           active={mode === value}
           dot={value === "digest" && digestUnseen}
-          onClick={() => modeStore.set(value)}
+          onClick={() => (value === "digest" ? showDigestFeed() : modeStore.set(value))}
         />
       ))}
 

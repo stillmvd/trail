@@ -1,4 +1,10 @@
+import type { ReactNode } from "react";
+
 export const FUSED = "rounded-md first:rounded-t-3xl last:rounded-b-3xl";
+
+export function CapsHead({ children }: { children: ReactNode }) {
+  return <h3 className="pl-4 text-xs font-bold tracking-[0.02em] text-[var(--ds-text-faint)] uppercase">{children}</h3>;
+}
 
 export type DigestRow = { key: number; title: string; source: string; meta?: string; onOpen: () => void };
 

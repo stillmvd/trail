@@ -9,7 +9,7 @@ import { groupDigest, isRead, type DigestGroup } from "@/lib/digest/groups";
 import { emptyState } from "@/lib/digest/emptyState";
 import { openRouterKeyStore } from "@/lib/openrouter";
 import { todayISO } from "@/lib/dates";
-import { modeStore } from "@/lib/mode";
+import { openDigestSettings } from "@/lib/digest/stores";
 import { pluralRu } from "@/lib/duration";
 import { useQuery } from "@/lib/useQuery";
 import { searchItems } from "@/db/queries/digestItems";
@@ -105,7 +105,7 @@ export function DigestView() {
     else if (result.kind === "empty" && digests.some((d) => d.date === today)) show(result.message, "info");
     else if (result.kind === "error" && !empty) show(result.message, "error");
   };
-  const openSettings = () => modeStore.set("settings");
+  const openSettings = () => openDigestSettings();
 
   const selectedId = useDigestKeys(q || savedView || archiveOpen ? [] : main, {
     open: openEntry,
@@ -121,7 +121,7 @@ export function DigestView() {
   };
 
   const emptyAction = () => {
-    if (empty?.kind === "nokey") openSettings();
+    if (empty?.kind === "nokey") openDigestSettings("run");
     else runCollect();
   };
 

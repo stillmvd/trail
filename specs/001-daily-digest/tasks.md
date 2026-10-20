@@ -148,11 +148,11 @@
 
 **Independent Test**: добавить битую ленту → в здоровье ошибка, сводка собрана из остальных; снять бан → домен снова в отборе.
 
-- [ ] T042 [P] [US5] `desktop/src/components/settings/DigestSourceManager.tsx` + `DigestSourceForm.tsx` по стенду 007 и образцу `CategoryManager`/`MarkTypeManager`: RSS (адрес, кодировка), сабреддиты, GitHub-репо, включить/выключить, удалить (`rust` только у удаления)
-- [ ] T043 [P] [US5] `desktop/src/components/settings/DigestSettingsPanel.tsx`: интересы и антиинтересы (`Textarea`, свободный текст; под интересами одна строка «Темы сводки следуют за интересами: метка — текст до двоеточия»), `digest_max_items` («за один сбор»), `digest_window_hours`, `digest_hn_min_points`, `digest_reddit_take` («сколько брать из топа дня, всего»), `digest_time` (`TimePicker`), модель, «Ключ OpenRouter» (общий `openRouterKeyStore`; в `ImageGenPanel` подпись поля тоже «Ключ OpenRouter»), сроки хранения, выключатель тоста `notifyDigestStore`
-- [ ] T044 [P] [US5] `desktop/src/components/settings/DigestHealthPanel.tsx`: по источнику — жив/сбой, `last_error` + время, `last_count`, доля попаданий в сводки (из `digest_entries` за 30 дней)
-- [ ] T045 [P] [US5] `desktop/src/components/settings/DigestBansPanel.tsx`: список `digest_bans`, «Разбанить»
-- [ ] T046 [US5] Секция «Сводка» в `desktop/src/pages/SettingsPage.tsx` со всеми панелями
+- [x] T042 [P] [US5] `desktop/src/components/settings/DigestSourceManager.tsx` + `DigestSourceForm.tsx` по стенду 007 и образцу `CategoryManager`/`MarkTypeManager`: RSS (адрес, кодировка), сабреддиты, GitHub-репо, включить/выключить, удалить (`rust` только у удаления)
+- [x] T043 [P] [US5] `desktop/src/components/settings/DigestSettingsPanel.tsx`: интересы и антиинтересы (`Textarea`, свободный текст; под интересами одна строка «Темы сводки следуют за интересами: метка — текст до двоеточия»), `digest_max_items` («за один сбор»), `digest_window_hours`, `digest_hn_min_points`, `digest_reddit_take` («сколько брать из топа дня, всего»), `digest_time` (`TimePicker`), модель, «Ключ OpenRouter» (общий `openRouterKeyStore`; в `ImageGenPanel` подпись поля тоже «Ключ OpenRouter»), сроки хранения, выключатель тоста `notifyDigestStore`
+- [x] T044 [P] [US5] `desktop/src/components/settings/DigestHealthPanel.tsx`: по источнику — жив/сбой, `last_error` + время, `last_count`, доля попаданий в сводки (из `digest_entries` за 30 дней)
+- [x] T045 [P] [US5] `desktop/src/components/settings/DigestBansPanel.tsx`: список `digest_bans`, «Разбанить»
+- [x] T046 [US5] Секция «Сводка» в `desktop/src/pages/SettingsPage.tsx` со всеми панелями
 
 **Checkpoint**: Independent Test пройден. Коммит фазы.
 
@@ -161,9 +161,9 @@
 ## Phase 10: Polish & Cross-Cutting
 
 - [ ] T047 Прогнать `specs/001-daily-digest/quickstart.md` целиком (сценарии 1–9) в `pnpm tauri dev`
-- [ ] T048 `pnpm run check` из `desktop/` (tsc, selftest, clippy `-D warnings`, cargo test) зелёный
-- [ ] T049 [P] Обновить CLAUDE.md Trail (локальный, в gitignore): режим «Сводка» в «Режимы просмотра», таблицы `digest_*` в «Данные», `lib/digest/` и `components/digest/` в «Архитектура», раздел про сбор и ключ OpenRouter; README — строка о разделе
-- [ ] T050 Сообщить cairn-15, что раздел готов, — папку Cairn удаляет он после пары дней работы
+- [x] T048 `pnpm run check` из `desktop/` (tsc, selftest, clippy `-D warnings`, cargo test) зелёный
+- [x] T049 [P] Обновить CLAUDE.md Trail (локальный, в gitignore): режим «Сводка» в «Режимы просмотра», таблицы `digest_*` в «Данные», `lib/digest/` и `components/digest/` в «Архитектура», раздел про сбор и ключ OpenRouter; README — строка о разделе
+- [x] T050 Сообщить cairn-15, что раздел готов, — папку Cairn удаляет он после пары дней работы
 
 ---
 

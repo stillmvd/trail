@@ -3,7 +3,7 @@ import { ru } from "date-fns/locale";
 import { SideSheet } from "@/components/ui/SideSheet";
 import { pluralRu } from "@/lib/duration";
 import type { Digest } from "@/db/queries/digests";
-import { FUSED } from "./DigestRows";
+import { CapsHead, FUSED } from "./DigestRows";
 
 const MATERIALS: [string, string, string] = ["материал", "материала", "материалов"];
 
@@ -22,7 +22,7 @@ function ArchiveGroup({
   const now = new Date();
   return (
     <section className="flex flex-col gap-1">
-      <h3 className="pl-4 text-xs font-bold tracking-[0.02em] text-[var(--ds-text-faint)] uppercase">{title}</h3>
+      <CapsHead>{title}</CapsHead>
       <div className="flex flex-col gap-0.5">
         {digests.map((d) => {
           const date = parseISO(d.date);
