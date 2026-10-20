@@ -17,22 +17,31 @@ const TIMEOUT_MS = 20_000;
 
 const SOURCE_NAMES: Record<string, string> = { "habr.com": "Хабр", "pikabu.ru": "Пикабу" };
 
-async function get(url: string, userAgent: string, accept?: string) {
-  const res = await fetch(url, {
-    headers: { "user-agent": userAgent, ...(accept ? { accept } : {}) },
-    signal: AbortSignal.timeout(TIMEOUT_MS),
-  });
-  if (!res.ok) throw new Error(`${res.status} ${res.statusText}`.trim());
-  return res;
+async function request<T>(
+  url: string,
+  { userAgent, accept, timeoutMs = TIMEOUT_MS }: { userAgent: string; accept?: string; timeoutMs?: number },
+  read: (res: Response) => Promise<T>,
+): Promise<T> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const res = await fetch(url, {
+      headers: { "user-agent": userAgent, ...(accept ? { accept } : {}) },
+      signal: controller.signal,
+    });
+    if (!res.ok) throw new Error(`${res.status} ${res.statusText}`.trim());
+    return await read(res);
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 async function getText(url: string, userAgent: string, encoding?: string | null) {
-  const res = await get(url, userAgent);
-  return new TextDecoder(encoding || "utf-8").decode(await res.arrayBuffer());
+  return request(url, { userAgent }, async (res) => new TextDecoder(encoding || "utf-8").decode(await res.arrayBuffer()));
 }
 
 async function getJson<T>(url: string): Promise<T> {
-  return (await get(url, BOT_UA, "application/json")).json() as Promise<T>;
+  return request(url, { userAgent: BOT_UA, accept: "application/json" }, (res) => res.json() as Promise<T>);
 }
 
 function textOf(html: string | null | undefined): string {
@@ -156,19 +165,12 @@ export async function fromGithub(repo: string): Promise<Fetched[]> {
 }
 
 export async function pageText(url: string, timeoutMs: number): Promise<string> {
-  const res = await fetch(url, {
-    headers: { "user-agent": BROWSER_UA },
-    signal: AbortSignal.timeout(timeoutMs),
-  });
-  if (!res.ok) throw new Error(String(res.status));
-  return res.text();
+  return request(url, { userAgent: BROWSER_UA, timeoutMs }, (res) => res.text());
 }
 
 export async function download(url: string, timeoutMs: number): Promise<{ bytes: Uint8Array; type: string }> {
-  const res = await fetch(url, {
-    headers: { "user-agent": BROWSER_UA },
-    signal: AbortSignal.timeout(timeoutMs),
-  });
-  if (!res.ok) throw new Error(String(res.status));
-  return { bytes: new Uint8Array(await res.arrayBuffer()), type: res.headers.get("content-type") ?? "" };
+  return request(url, { userAgent: BROWSER_UA, timeoutMs }, async (res) => ({
+    bytes: new Uint8Array(await res.arrayBuffer()),
+    type: res.headers.get("content-type") ?? "",
+  }));
 }
