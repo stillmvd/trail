@@ -6,6 +6,7 @@ import { todayISO } from "@/lib/dates";
 import { collectDigest, refreshUnseen, type CollectResult } from "@/lib/digest/collect";
 import { loadDigestConfig, STATE_KEYS, type DigestConfig } from "@/lib/digest/config";
 import { topicsFromInterests } from "@/lib/digest/pick";
+import { ensureSeeded } from "@/lib/digest/seed";
 import { bumpDigestVersion, digestRunStore, digestVersionStore, type DigestRun } from "@/lib/digest/stores";
 import {
   allMainOpened,
@@ -58,6 +59,7 @@ export function useDigest() {
 }
 
 async function loadStatus(): Promise<DigestStatus> {
+  await ensureSeeded();
   const [config, lastError, lastAttemptAt, attemptsDate, attemptsCount] = await Promise.all([
     loadDigestConfig(),
     getSetting(STATE_KEYS.lastError),
