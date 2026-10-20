@@ -8,6 +8,7 @@ import { winToast } from "../notifications";
 import { OPENROUTER_CHAT_URL, openRouterKeyStore, postJson } from "../openrouter";
 import { loadDigestConfig, STATE_KEYS } from "./config";
 import { buildPrompt, dedupe, parseSelection, topicsFromInterests } from "./pick";
+import { settleLimited } from "./limit";
 import { fetchPreviews } from "./previews";
 import { ensureSeeded } from "./seed";
 import { fromGithub, fromHackerNews, fromReddit, fromRss, type Fetched } from "./sources";
@@ -26,23 +27,6 @@ let running = false;
 type Job = { run: () => Promise<Fetched[]>; ok: (n: number) => Promise<void>; fail: (m: string) => Promise<void> };
 
 const PARALLEL_SOURCES = 4;
-
-async function settleLimited<T>(tasks: (() => Promise<T>)[], limit: number): Promise<PromiseSettledResult<T>[]> {
-  const results: PromiseSettledResult<T>[] = new Array(tasks.length);
-  let next = 0;
-  const worker = async () => {
-    while (next < tasks.length) {
-      const i = next++;
-      try {
-        results[i] = { status: "fulfilled", value: await tasks[i]() };
-      } catch (reason) {
-        results[i] = { status: "rejected", reason };
-      }
-    }
-  };
-  await Promise.all(Array.from({ length: Math.min(limit, tasks.length) }, worker));
-  return results;
-}
 
 const mark = (label: string, since: number) => {
   if (import.meta.env.DEV) console.info(`[digest] ${label}: ${Math.round(performance.now() - since)} ms`);

@@ -90,13 +90,15 @@ export async function appendToDigest(input: {
     [input.digestId],
   );
   const offset = (rows[0]?.max ?? -1) + 1;
-  await db.execute(`DELETE FROM digest_entries WHERE digest_id = ? AND tier = 'near'`, [input.digestId]);
   const added = await insertEntries(
     input.digestId,
     input.main.map((e) => ({ ...e, position: e.position + offset })),
     now,
   );
-  await insertEntries(input.digestId, input.near, now);
+  if (input.near.length > 0) {
+    await db.execute(`DELETE FROM digest_entries WHERE digest_id = ? AND tier = 'near'`, [input.digestId]);
+    await insertEntries(input.digestId, input.near, now);
+  }
   await db.execute(`UPDATE digests SET candidates = candidates + ? WHERE id = ?`, [
     input.candidates,
     input.digestId,

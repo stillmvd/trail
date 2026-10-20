@@ -73,7 +73,7 @@
 | opened_at | TEXT | момент перехода по ссылке |
 
 `PRIMARY KEY (digest_id, item_id)`. За один прогон в `main` добавляется ≤ maxItems; сводка дня с доборами может
-быть больше. `near` ≤ 8 и при доборе целиком заменяется результатом последнего прогона (удалить `near` сводки,
+быть больше. `near` ≤ 8 и при доборе заменяется результатом последнего прогона только если он не пуст (удалить `near` сводки,
 вставить новые). Позиция «добора» = `added_at` позже `digests.created_at` более чем на 1 минуту.
 
 ## digest_reactions — лайк/дизлайк
@@ -130,4 +130,5 @@ localStorage (`createLocalStore`, не в бэкапе): `trail.imagegen.openRou
 2. материалы с `found_at` старше `keep_candidates_days`, не входящие ни в одну позицию, не в `digest_saved`
    и без реакции → удалить;
 3. превью с `preview_at` старше `keep_previews_days` → удалить файлы (`prune_digest_previews`),
-   обнулить `preview_file`.
+   обнулить `preview_file`;
+4. файлы `digest-cache/`, имени которых нет ни в одном `digest_items.preview_file` (сироты от удалённых строк), → удалить.
