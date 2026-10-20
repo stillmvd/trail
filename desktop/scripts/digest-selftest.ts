@@ -9,6 +9,9 @@ import {
   trimVerdict,
   withinWindow,
 } from "../src/lib/digest/pick.ts";
+import { emptyState, NOTHING_FRESH } from "../src/lib/digest/emptyState.ts";
+import { groupDigest } from "../src/lib/digest/groups.ts";
+import type { Digest, DigestEntry } from "../src/db/queries/digests.ts";
 
 const fresh = dedupe(
   [
@@ -121,5 +124,48 @@ assert.ok(!prompt.includes("Раньше отклонял"));
 assert.ok(prompt.includes("- Пикабу: 3 отклонений подряд"));
 assert.ok(prompt.includes("0. [Хабр] Утечка памяти в Python"));
 assert.ok(prompt.includes("тему ровно из списка: Фронтенд и TypeScript, AI и LLM"));
+
+const base = {
+  today: "2026-10-20",
+  now: new Date(2026, 9, 20, 10, 0).getTime(),
+  hasToday: false,
+  hasAny: true,
+  hasKey: true,
+  lastError: "",
+  lastAttemptAt: null,
+  attemptsToday: 0,
+  config: { time: "09:00", windowHours: 26 },
+};
+assert.equal(emptyState({ ...base, hasToday: true }), null);
+assert.equal(emptyState(base), null);
+assert.equal(emptyState({ ...base, hasKey: false })?.kind, "nokey");
+assert.equal(emptyState({ ...base, hasAny: false, now: new Date(2026, 9, 20, 8, 0).getTime() })?.text, "Первый сбор — сегодня в 9:00.");
+const failedAt = new Date(2026, 9, 20, 9, 50).toISOString();
+const failed = emptyState({ ...base, lastError: "Хабр: Failed to fetch", lastAttemptAt: failedAt, attemptsToday: 1 });
+assert.equal(failed?.kind, "error");
+assert.equal(failed?.text, "Хабр: Failed to fetch · повторю через 5 минут, попыток осталось 2");
+const none = emptyState({ ...base, lastError: NOTHING_FRESH, lastAttemptAt: failedAt, attemptsToday: 3 });
+assert.equal(none?.kind, "none");
+assert.equal(none?.text, "За последние 26 часов источники не дали ничего нового. Следующий сбор — завтра в 9:00.");
+const yesterday = new Date(2026, 9, 19, 23, 0).toISOString();
+assert.equal(emptyState({ ...base, lastError: "x", lastAttemptAt: yesterday }), null);
+
+const created = "2026-10-20T06:00:00.000Z";
+const entry = (item_id: number, topic: string, position: number, added_at = created, opened_at: string | null = null) =>
+  ({ item_id, topic, position, added_at, opened_at, tier: "main", reaction: null }) as unknown as DigestEntry;
+const groups = groupDigest(
+  { created_at: created } as unknown as Digest,
+  [
+    entry(1, "Любопытное", 0),
+    entry(2, "AI и LLM", 2),
+    entry(3, "AI и LLM", 1),
+    entry(4, "AI и LLM", 3, "2026-10-20T11:30:00.000Z"),
+    entry(5, "AI и LLM", 4, "2026-10-20T11:30:00.000Z", "2026-10-20T11:40:00.000Z"),
+  ],
+  ["AI и LLM", "Любопытное"],
+);
+assert.deepEqual(groups.map((g) => g.topic), ["AI и LLM", "Любопытное"]);
+assert.deepEqual(groups[0].entries.map((e) => e.item_id), [3, 2, 4, 5]);
+assert.equal(groups[0].fresh, 1);
 
 console.log("digest selftest ok");

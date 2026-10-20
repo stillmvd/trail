@@ -1,10 +1,12 @@
 import { createContext, useCallback, useContext, useState, type ReactNode } from "react";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { useQuery } from "@/lib/useQuery";
-import { refreshUnseen } from "@/lib/digest/collect";
-import { loadDigestConfig } from "@/lib/digest/config";
+import { getSetting } from "@/db/queries/settings";
+import { todayISO } from "@/lib/dates";
+import { collectDigest, refreshUnseen, type CollectResult } from "@/lib/digest/collect";
+import { loadDigestConfig, STATE_KEYS, type DigestConfig } from "@/lib/digest/config";
 import { topicsFromInterests } from "@/lib/digest/pick";
-import { bumpDigestVersion, digestVersionStore } from "@/lib/digest/stores";
+import { bumpDigestVersion, digestRunStore, digestVersionStore, type DigestRun } from "@/lib/digest/stores";
 import {
   allMainOpened,
   listDigests,
@@ -16,7 +18,17 @@ import {
 } from "@/db/queries/digests";
 import { banDomain, listBans, setReaction, toggleSaved } from "@/db/queries/digestReactions";
 
+export type DigestStatus = {
+  config: DigestConfig;
+  lastError: string;
+  lastAttemptAt: string | null;
+  attemptsToday: number;
+};
+
 type DigestCtx = {
+  run: DigestRun;
+  status: DigestStatus | null;
+  collect: () => Promise<CollectResult>;
   loaded: boolean;
   error: string | null;
   digests: Digest[];
@@ -40,7 +52,21 @@ export function useDigest() {
   return ctx;
 }
 
-const loadTopics = async () => topicsFromInterests((await loadDigestConfig()).interests);
+async function loadStatus(): Promise<DigestStatus> {
+  const [config, lastError, lastAttemptAt, attemptsDate, attemptsCount] = await Promise.all([
+    loadDigestConfig(),
+    getSetting(STATE_KEYS.lastError),
+    getSetting(STATE_KEYS.lastAttemptAt),
+    getSetting(STATE_KEYS.attemptsDate),
+    getSetting(STATE_KEYS.attemptsCount),
+  ]);
+  return {
+    config,
+    lastError: lastError ?? "",
+    lastAttemptAt,
+    attemptsToday: attemptsDate === todayISO() ? Number(attemptsCount ?? 0) : 0,
+  };
+}
 
 async function viewIfDone(digestId: number) {
   if (!(await allMainOpened(digestId))) return;
@@ -50,13 +76,15 @@ async function viewIfDone(digestId: number) {
 
 export function DigestProvider({ children }: { children: ReactNode }) {
   const version = digestVersionStore.use();
+  const run = digestRunStore.use();
   const [selectedId, setSelectedId] = useState<number | null>(null);
 
   const loadDigests = useCallback(() => listDigests(), [version]);
   const loadBans = useCallback(() => listBans(), [version]);
   const { data: digests, error } = useQuery(loadDigests);
   const { data: bans } = useQuery(loadBans);
-  const { data: topics } = useQuery(loadTopics);
+  const reloadStatus = useCallback(() => loadStatus(), [version, run]);
+  const { data: status } = useQuery(reloadStatus);
 
   const digest = digests?.find((d) => d.id === selectedId) ?? digests?.[0] ?? null;
   const digestId = digest?.id ?? null;
@@ -65,6 +93,12 @@ export function DigestProvider({ children }: { children: ReactNode }) {
     [digestId, version],
   );
   const { data: entries } = useQuery(loadEntries);
+
+  const collect = async () => {
+    const result = await collectDigest({ manual: true });
+    if (result.kind !== "busy") bumpDigestVersion();
+    return result;
+  };
 
   const openEntry = async (entry: DigestEntry) => {
     await openUrl(entry.url);
@@ -103,10 +137,13 @@ export function DigestProvider({ children }: { children: ReactNode }) {
   return (
     <Context.Provider
       value={{
-        loaded: digests !== null && (digestId === null || entries !== null),
+        loaded: digests !== null && status !== null && (digestId === null || entries !== null),
         error,
         digests: digests ?? [],
-        topics: topics ?? [],
+        topics: status ? topicsFromInterests(status.config.interests) : [],
+        run,
+        status,
+        collect,
         digest,
         entries: entries ?? [],
         bannedDomains: new Set((bans ?? []).map((b) => b.domain)),

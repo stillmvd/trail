@@ -5,6 +5,7 @@ type Actions = {
   open: (entry: DigestEntry) => void;
   react: (entry: DigestEntry, value: 1 | -1) => void;
   star: (entry: DigestEntry) => void;
+  search: () => void;
 };
 
 export function useDigestKeys(order: DigestEntry[], actions: Actions) {
@@ -14,11 +15,21 @@ export function useDigestKeys(order: DigestEntry[], actions: Actions) {
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
+      const { order, actions, selectedId } = latest.current;
+      if ((e.ctrlKey || e.metaKey) && e.code === "KeyF") {
+        e.preventDefault();
+        actions.search();
+        return;
+      }
       if (e.ctrlKey || e.metaKey || e.altKey) return;
       const t = e.target as HTMLElement | null;
       if (t?.tagName === "INPUT" || t?.tagName === "TEXTAREA" || t?.isContentEditable) return;
+      if (e.code === "Slash") {
+        e.preventDefault();
+        actions.search();
+        return;
+      }
       if (e.code === "Enter" && t?.tagName === "BUTTON") return;
-      const { order, actions, selectedId } = latest.current;
       if (order.length === 0) return;
       const index = order.findIndex((x) => x.item_id === selectedId);
       const current = index === -1 ? null : order[index];

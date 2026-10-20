@@ -9,6 +9,7 @@ import { OPENROUTER_CHAT_URL, openRouterKeyStore, postJson } from "../openrouter
 import { loadDigestConfig, STATE_KEYS } from "./config";
 import { buildPrompt, dedupe, parseSelection, topicsFromInterests } from "./pick";
 import { settleLimited } from "./limit";
+import { NOTHING_FRESH, NOTHING_PICKED } from "./emptyState";
 import { fetchPreviews } from "./previews";
 import { pruneDigest } from "./prune";
 import { ensureSeeded } from "./seed";
@@ -126,7 +127,7 @@ async function run(manual: boolean): Promise<CollectResult> {
   ).filter((c) => !inDigest.has(c.id));
 
   if (candidates.length === 0) {
-    const message = existing ? "Нового не нашлось" : "Свежего ничего не нашлось";
+    const message = existing ? "Нового не нашлось" : NOTHING_FRESH;
     if (existing) {
       await setSetting(STATE_KEYS.lastError, "");
       digestRunStore.set({ state: "idle" });
@@ -179,7 +180,7 @@ async function run(manual: boolean): Promise<CollectResult> {
   }));
 
   if (!existing && main.length === 0) {
-    const message = "Модель не нашла ничего стоящего";
+    const message = NOTHING_PICKED;
     await recordFailure(message, manual, true);
     return { kind: "empty", message };
   }

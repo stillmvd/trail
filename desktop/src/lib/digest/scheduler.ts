@@ -6,11 +6,10 @@ import { getDigestByDate } from "@/db/queries/digests";
 import { todayISO } from "../dates";
 import { modeStore } from "../mode";
 import { loadDigestConfig, STATE_KEYS } from "./config";
+import { MAX_ATTEMPTS, RETRY_AFTER_MS } from "./emptyState";
 import { collectDigest, isCollecting, refreshUnseen } from "./collect";
 
 const CHECK_INTERVAL_MS = 5 * 60 * 1000;
-const RETRY_AFTER_MS = 15 * 60 * 1000;
-const MAX_ATTEMPTS = 3;
 
 async function isDue(): Promise<boolean> {
   if (isCollecting()) return false;
