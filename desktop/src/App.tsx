@@ -12,6 +12,7 @@ import { useApplyTheme } from "./lib/theme";
 import { useCloseToTray } from "./lib/behavior";
 import { useNotifications } from "./lib/notifications";
 import { useAutoBackup } from "./lib/backup";
+import { useDigestScheduler } from "./lib/digest/scheduler";
 import { SettingsPage } from "./pages/SettingsPage";
 import { GalleryPage } from "./pages/GalleryPage";
 import { CalendarPage } from "./pages/CalendarPage";
@@ -41,6 +42,7 @@ export default function App() {
   useCloseToTray();
   useNotifications();
   useAutoBackup();
+  useDigestScheduler();
   const mode = modeStore.use();
   const Page = PAGES[mode];
 

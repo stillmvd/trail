@@ -23,7 +23,7 @@ import {
   type ReminderInput,
 } from "@/db/queries/reminders";
 
-type NotificationAction = { kind: "reminder" | "birthday"; id: number; action: string };
+type NotificationAction = { kind: "reminder" | "birthday" | "digest"; id: number; action: string };
 
 type RemindersCtx = {
   addReminder: (input: ReminderInput) => Promise<boolean>;
@@ -80,6 +80,10 @@ export function RemindersProvider({ children }: { children: ReactNode }) {
     const unlisten = listen<NotificationAction>("notification-action", async ({ payload }) => {
       if (payload.kind === "birthday") {
         modeStore.set("birthdays");
+        return;
+      }
+      if (payload.kind === "digest") {
+        modeStore.set("digest");
         return;
       }
       modeStore.set("reminders");

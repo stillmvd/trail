@@ -40,8 +40,8 @@ const REMINDER_BUTTONS: ToastButton[] = [
 
 // Родной WinRT-тост несёт кнопки и клик, плагин — нет. Если WinRT недоступен,
 // падаем на плагин: лучше тост без действий, чем тишина.
-async function winToast(
-  kind: "reminder" | "birthday",
+export async function winToast(
+  kind: "reminder" | "birthday" | "digest",
   id: number,
   title: string,
   body?: string,

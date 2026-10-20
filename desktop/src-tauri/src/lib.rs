@@ -282,10 +282,11 @@ fn setup_tray(app: &tauri::App) -> tauri::Result<()> {
     use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
 
     let open = MenuItem::with_id(app, "open", "Открыть", true, None::<&str>)?;
+    let digest = MenuItem::with_id(app, "digest", "Сводка", true, None::<&str>)?;
     let add_reminder =
         MenuItem::with_id(app, "add_reminder", "Добавить напоминание", true, None::<&str>)?;
     let quit = MenuItem::with_id(app, "quit", "Выход", true, None::<&str>)?;
-    let menu = Menu::with_items(app, &[&open, &add_reminder, &quit])?;
+    let menu = Menu::with_items(app, &[&open, &digest, &add_reminder, &quit])?;
 
     TrayIconBuilder::with_id("main")
         .icon(tray_image()?)
@@ -294,6 +295,11 @@ fn setup_tray(app: &tauri::App) -> tauri::Result<()> {
         .show_menu_on_left_click(false)
         .on_menu_event(|app, event| match event.id.as_ref() {
             "open" => show_main(app),
+            "digest" => {
+                show_main(app);
+                use tauri::Emitter;
+                let _ = app.emit("open-digest", ());
+            }
             "add_reminder" => {
                 show_main(app);
                 use tauri::Emitter;
