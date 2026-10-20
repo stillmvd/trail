@@ -6,9 +6,9 @@ import {
   comfyDirStore,
   comfyUrlStore,
   imageProviderStore,
-  openRouterKeyStore,
   type ImageProvider,
 } from "@/lib/imageGen";
+import { openRouterKeyStore } from "@/lib/openrouter";
 
 const PROVIDER_SEGMENTS: { value: ImageProvider; label: string }[] = [
   { value: "comfyui", label: "ComfyUI" },

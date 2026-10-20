@@ -1,6 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import { fetch } from "@tauri-apps/plugin-http";
 import { createLocalStore } from "./localStore";
+import { apiError, OPENROUTER_CHAT_URL, openRouterKeyStore, postJson } from "./openrouter";
 
 export type ImageProvider = "comfyui" | "cloudflare" | "openrouter";
 
@@ -9,7 +10,6 @@ export const comfyUrlStore = createLocalStore<string>("trail.imagegen.comfyUrl",
 export const comfyDirStore = createLocalStore<string>("trail.imagegen.comfyDir", "C:/AI/ComfyUI/ComfyUI/ComfyUI");
 export const cfAccountStore = createLocalStore<string>("trail.imagegen.cfAccount", "");
 export const cfTokenStore = createLocalStore<string>("trail.imagegen.cfToken", "");
-export const openRouterKeyStore = createLocalStore<string>("trail.imagegen.openRouterKey", "");
 
 const STYLE =
   "Minimal hand-drawn illustration, flat simple shapes, soft natural colors, gentle grain texture. Cozy centered composition, the scene fills most of the frame, every mentioned detail is visible. Deep charcoal background. No text, no letters, no frame.";
@@ -101,7 +101,7 @@ async function describeScene(entry: string): Promise<string | null> {
   const attempts = [
     orKey &&
       (async () => {
-        const res = await postJson("https://openrouter.ai/api/v1/chat/completions", orKey, {
+        const res = await postJson(OPENROUTER_CHAT_URL, orKey, {
           models: OR_LLMS,
           messages,
         });
@@ -235,7 +235,7 @@ async function generateCloudflare(prompt: string): Promise<File> {
 async function generateOpenRouter(prompt: string): Promise<File> {
   const key = openRouterKeyStore.get().trim();
   if (!key) throw new Error("Укажите ключ OpenRouter в настройках");
-  const json = await postJson("https://openrouter.ai/api/v1/chat/completions", key, {
+  const json = await postJson(OPENROUTER_CHAT_URL, key, {
     model: OR_IMAGE,
     messages: [{ role: "user", content: prompt }],
     modalities: ["image"],
@@ -246,25 +246,8 @@ async function generateOpenRouter(prompt: string): Promise<File> {
   return base64ToFile(url);
 }
 
-async function postJson(url: string, token: string, body: unknown) {
-  const res = await fetch(url, {
-    method: "POST",
-    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  });
-  const json = await res.json().catch(() => null);
-  if (!res.ok) throw new Error(apiError(new URL(url).hostname, res.status, json));
-  return json;
-}
-
 function cfUrl(account: string, model: string) {
   return `https://api.cloudflare.com/client/v4/accounts/${account}/ai/run/${model}`;
-}
-
-function apiError(source: string, status: number, json: unknown) {
-  const j = json as { error?: { message?: string }; errors?: { message?: string }[] } | null;
-  const message = j?.error?.message ?? j?.errors?.[0]?.message;
-  return `${source}: ${message ?? `ошибка ${status}`}`;
 }
 
 function base64ToFile(data: string): File {
