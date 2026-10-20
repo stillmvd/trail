@@ -39,7 +39,9 @@ function ArchiveGroup({
                 <b className="text-sm font-semibold whitespace-nowrap text-app-text">
                   {format(date, isSameYear(date, now) ? "d MMMM" : "d MMMM yyyy", { locale: ru })}
                 </b>
-                <span className="truncate text-xs text-[var(--ds-text-faint)]">
+                <span
+                  className={`truncate text-xs ${d.id === currentId ? "text-[var(--ds-text-secondary)]" : "text-muted"}`}
+                >
                   {d.main_count} {pluralRu(d.main_count, MATERIALS)}
                 </span>
               </span>
