@@ -39,5 +39,6 @@ tauri-plugin-single-instance = "2"
 [target.'cfg(windows)'.dependencies]
 webview2-com = "0.39"
 windows = "0.62"
+windows-registry = "0.6"
 tauri-winrt-notification = "0.7.3"
 

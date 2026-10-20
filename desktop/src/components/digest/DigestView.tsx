@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useRef, useState, type MouseEvent } from "react";
 import { Ban } from "lucide-react";
-import { openUrl } from "@tauri-apps/plugin-opener";
+import { openArticle } from "@/lib/digest/open";
 import { format } from "date-fns";
 import { ru } from "date-fns/locale";
 import { ContextMenu } from "@/components/ui/ContextMenu";
@@ -151,7 +151,7 @@ export function DigestView() {
                 title: r.title,
                 source: r.source,
                 meta: dayOf(r.published_at) ?? dayOf(r.found_at) ?? "",
-                onOpen: () => openUrl(r.url),
+                onOpen: () => openArticle(r.url),
               }))}
             />
           ) : (

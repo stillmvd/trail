@@ -1,7 +1,7 @@
 import { format, parseISO } from "date-fns";
 import { ru } from "date-fns/locale";
 import { Star } from "lucide-react";
-import { openUrl } from "@tauri-apps/plugin-opener";
+import { openArticle } from "@/lib/digest/open";
 import type { SavedItem } from "./DigestProvider";
 import { DigestEmpty } from "./DigestEmpty";
 
@@ -23,7 +23,7 @@ export function DigestSaved({ items, onUnsave }: { items: SavedItem[]; onUnsave:
           key={item.id}
           className="flex min-w-0 flex-col gap-2.5 rounded-4xl bg-surface-1 p-3 transition-[scale] duration-200 ease-[var(--rg-ease)] has-[[data-open]:active]:scale-[0.96]"
         >
-          <button type="button" data-open onClick={() => openUrl(item.url)} className="flex cursor-pointer flex-col gap-2.5 text-left">
+          <button type="button" data-open onClick={() => openArticle(item.url)} className="flex cursor-pointer flex-col gap-2.5 text-left">
             <span className="line-clamp-2 text-[15px] leading-[1.3] font-semibold text-app-text">{item.title}</span>
             <span className="text-[12.5px] text-[var(--ds-text-faint)]">
               <b className="font-semibold text-muted">{item.source}</b> · сохранено{" "}

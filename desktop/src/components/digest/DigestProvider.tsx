@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useState, type ReactNode } from "react";
-import { openUrl } from "@tauri-apps/plugin-opener";
+import { openArticle } from "@/lib/digest/open";
 import { useQuery } from "@/lib/useQuery";
 import { getSetting } from "@/db/queries/settings";
 import { todayISO } from "@/lib/dates";
@@ -110,7 +110,7 @@ export function DigestProvider({ children }: { children: ReactNode }) {
   };
 
   const openEntry = async (entry: DigestEntry) => {
-    await openUrl(entry.url);
+    await openArticle(entry.url);
     await markEntryOpened(entry.digest_id, entry.item_id);
     await viewIfDone(entry.digest_id);
     bumpDigestVersion();

@@ -48,6 +48,60 @@ fn list_digest_previews(app: tauri::AppHandle) -> Result<Vec<String>, String> {
         .collect())
 }
 
+fn is_web_url(url: &str) -> bool {
+    let lower = url.to_ascii_lowercase();
+    (lower.starts_with("https://") || lower.starts_with("http://"))
+        && !url.chars().any(|c| c.is_control() || c == '"')
+}
+
+fn exe_from_command(command: &str) -> std::path::PathBuf {
+    let command = command.trim();
+    std::path::PathBuf::from(match command.strip_prefix('"') {
+        Some(rest) => rest.split('"').next().unwrap_or(rest),
+        None => command
+            .to_ascii_lowercase()
+            .find(".exe")
+            .map_or(command, |i| &command[..i + 4]),
+    })
+}
+
+#[cfg(windows)]
+fn chrome_exe() -> Option<std::path::PathBuf> {
+    use std::path::PathBuf;
+    let from_registry = windows_registry::LOCAL_MACHINE
+        .open(r"SOFTWARE\Clients\StartMenuInternet\Google Chrome\shell\open\command")
+        .and_then(|key| key.get_string(""))
+        .ok()
+        .map(|command| exe_from_command(&command));
+    let fallbacks = ["ProgramFiles", "ProgramFiles(x86)", "LOCALAPPDATA"]
+        .into_iter()
+        .filter_map(std::env::var_os)
+        .map(|base| PathBuf::from(base).join(r"Google\Chrome\Application\chrome.exe"));
+    from_registry.into_iter().chain(fallbacks).find(|path| path.is_file())
+}
+
+#[cfg(not(windows))]
+fn chrome_exe() -> Option<std::path::PathBuf> {
+    None
+}
+
+#[tauri::command]
+fn open_in_chrome(url: String) -> Result<(), String> {
+    if !is_web_url(&url) {
+        return Err("Недопустимый адрес".into());
+    }
+    let exe = chrome_exe().ok_or("Chrome не найден")?;
+    let mut cmd = std::process::Command::new(exe);
+    cmd.args(["--profile-directory=Default", url.as_str()]);
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+        const CREATE_NO_WINDOW: u32 = 0x0800_0000;
+        cmd.creation_flags(CREATE_NO_WINDOW);
+    }
+    cmd.spawn().map(|_| ()).map_err(|e| e.to_string())
+}
+
 #[tauri::command]
 fn delete_media(app: tauri::AppHandle, name: String) -> Result<(), String> {
     let path = app
@@ -474,6 +528,7 @@ pub fn run() {
             save_digest_preview,
             prune_digest_previews,
             list_digest_previews,
+            open_in_chrome,
             create_backup,
             restore_backup,
             #[cfg(windows)]
@@ -504,4 +559,33 @@ pub fn run() {
                 comfy_kill(&app.state::<Comfy>());
             }
         });
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::path::PathBuf;
+
+    #[test]
+    fn web_url_accepts_only_http_and_https() {
+        assert!(is_web_url("https://habr.com/ru/articles/1/"));
+        assert!(is_web_url("HTTP://example.com"));
+        assert!(!is_web_url("file:///C:/Windows/system32/calc.exe"));
+        assert!(!is_web_url("--disable-web-security"));
+        assert!(!is_web_url("https://a.com/\" --flag"));
+        assert!(!is_web_url("https://a.com/\nx"));
+    }
+
+    #[test]
+    fn exe_from_command_handles_quoted_and_bare_paths() {
+        assert_eq!(
+            exe_from_command(r#""C:\Program Files\Google\Chrome\Application\chrome.exe" -- "%1""#),
+            PathBuf::from(r"C:\Program Files\Google\Chrome\Application\chrome.exe")
+        );
+        assert_eq!(
+            exe_from_command(r"C:\Chrome\chrome.EXE --single-argument %1"),
+            PathBuf::from(r"C:\Chrome\chrome.EXE")
+        );
+        assert_eq!(exe_from_command("no-exe-here"), PathBuf::from("no-exe-here"));
+    }
 }
