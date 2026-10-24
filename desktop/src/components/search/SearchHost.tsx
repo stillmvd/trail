@@ -6,17 +6,15 @@ import { EMPTY_FILTER } from "@/lib/filter";
 import { modeStore } from "@/lib/mode";
 import { useEvents } from "@/components/events/EventsProvider";
 import { useQuery } from "@/lib/useQuery";
-import { getEventsInRange, type TimelineEvent } from "@/db/queries/events";
+import type { TimelineEvent } from "@/db/queries/events";
+import { listAllEvents } from "@/db/queries/loaders";
 import { listCategories } from "@/db/queries/categories";
-import { TIMELINE_MIN_DATE, TIMELINE_MAX_DATE } from "@/lib/constants";
-
-const loadEvents = () => getEventsInRange(TIMELINE_MIN_DATE, TIMELINE_MAX_DATE);
 
 export function SearchHost() {
   const open = searchOpenStore.use();
   const filter = filterStore.use();
   const { openView } = useEvents();
-  const { data: events } = useQuery(loadEvents);
+  const { data: events } = useQuery(listAllEvents);
   const { data: categories } = useQuery(listCategories);
 
   useEffect(() => {

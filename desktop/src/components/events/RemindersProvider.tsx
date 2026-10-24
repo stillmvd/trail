@@ -1,11 +1,12 @@
-import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { listen } from "@tauri-apps/api/event";
 import { useToast } from "@/components/ui/Toast";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { bumpDataVersion } from "@/lib/dataVersion";
 import { modeStore } from "@/lib/mode";
 import { showDigestFeed } from "@/lib/digest/stores";
-import { snoozePlusHour } from "@/lib/reminders";
+import { snoozePlusHour, nextOccurrence, nowLocalMinuteISO } from "@/lib/reminders";
+import { getQueryData, setQueryData, revalidateQuery } from "@/lib/useQuery";
 import { TIMELINE_MIN_DATE, TIMELINE_MAX_DATE, isValidISODate } from "@/lib/constants";
 import {
   ReminderSheet,
@@ -20,6 +21,7 @@ import {
   snoozeReminder,
   clearCompleted,
   getReminder,
+  listReminders,
   type Reminder,
   type ReminderInput,
 } from "@/db/queries/reminders";
@@ -57,6 +59,7 @@ export function RemindersProvider({ children }: { children: ReactNode }) {
   const { show } = useToast();
   const [confirmId, setConfirmId] = useState<number | null>(null);
   const [sheet, setSheet] = useState<ReminderSheetState | null>(null);
+  const saving = useRef(false);
 
   const openCreateReminder = useCallback(
     (prefill?: Partial<ReminderFormValues>) => setSheet({ mode: "create", prefill }),
@@ -89,20 +92,24 @@ export function RemindersProvider({ children }: { children: ReactNode }) {
       }
       modeStore.set("reminders");
       if (payload.id <= 0) return;
-      if (payload.action === "done") {
-        await completeReminder(payload.id);
-        bumpDataVersion();
-        show("Напоминание выполнено", "success");
-        return;
+      try {
+        if (payload.action === "done") {
+          await completeReminder(payload.id);
+          bumpDataVersion();
+          show("Напоминание выполнено", "success");
+          return;
+        }
+        if (payload.action === "snooze") {
+          await snoozeReminder(payload.id, snoozePlusHour());
+          bumpDataVersion();
+          show("Отложено на час", "success");
+          return;
+        }
+        const reminder = await getReminder(payload.id);
+        if (reminder) setSheet({ mode: "edit", reminder });
+      } catch (e) {
+        show(`Не удалось выполнить действие: ${String(e)}`, "error");
       }
-      if (payload.action === "snooze") {
-        await snoozeReminder(payload.id, snoozePlusHour());
-        bumpDataVersion();
-        show("Отложено на час", "success");
-        return;
-      }
-      const reminder = await getReminder(payload.id);
-      if (reminder) setSheet({ mode: "edit", reminder });
     });
     return () => {
       unlisten.then((f) => f());
@@ -116,7 +123,16 @@ export function RemindersProvider({ children }: { children: ReactNode }) {
         show(err, "error");
         return false;
       }
-      await createReminder({ ...input, title: input.title.trim() });
+      if (saving.current) return false;
+      saving.current = true;
+      try {
+        await createReminder({ ...input, title: input.title.trim() });
+      } catch (e) {
+        show(`Не удалось добавить напоминание: ${String(e)}`, "error");
+        return false;
+      } finally {
+        saving.current = false;
+      }
       bumpDataVersion();
       show("Напоминание добавлено", "success");
       return true;
@@ -131,7 +147,16 @@ export function RemindersProvider({ children }: { children: ReactNode }) {
         show(err, "error");
         return false;
       }
-      await updateReminder(id, { ...input, title: input.title.trim() });
+      if (saving.current) return false;
+      saving.current = true;
+      try {
+        await updateReminder(id, { ...input, title: input.title.trim() });
+      } catch (e) {
+        show(`Не удалось сохранить: ${String(e)}`, "error");
+        return false;
+      } finally {
+        saving.current = false;
+      }
       bumpDataVersion();
       show("Изменения сохранены", "success");
       return true;
@@ -141,40 +166,101 @@ export function RemindersProvider({ children }: { children: ReactNode }) {
 
   const removeReminder = useCallback((id: number) => setConfirmId(id), []);
 
-  const finishReminder = useCallback(async (id: number) => {
-    await completeReminder(id);
-    bumpDataVersion();
-  }, []);
+  const optimistic = useCallback(
+    async (patch: (list: Reminder[]) => Reminder[], write: () => Promise<void>, failure: string): Promise<boolean> => {
+      const snapshot = getQueryData<Reminder[]>(listReminders);
+      setQueryData<Reminder[]>(listReminders, (d) => d && patch(d));
+      try {
+        await write();
+        await revalidateQuery(listReminders);
+        return true;
+      } catch (e) {
+        setQueryData(listReminders, snapshot);
+        show(`${failure}: ${String(e)}`, "error");
+        await revalidateQuery(listReminders);
+        return false;
+      }
+    },
+    [show],
+  );
 
-  const postponeReminder = useCallback(async (id: number, untilISO: string) => {
-    await snoozeReminder(id, untilISO);
-    bumpDataVersion();
-  }, []);
+  const finishReminder = useCallback(
+    async (id: number) => {
+      const now = nowLocalMinuteISO();
+      await optimistic(
+        (list) =>
+          list.map((r) => {
+            if (r.id !== id) return r;
+            if (r.repeat === "none") return { ...r, completed_at: now, snoozed_until: null };
+            const date = nextOccurrence(r.date, r.repeat, r.repeat_every, r.repeat_unit, now.slice(0, 10));
+            return { ...r, date: date ?? r.date, snoozed_until: null };
+          }),
+        () => completeReminder(id),
+        "Не удалось выполнить напоминание",
+      );
+    },
+    [optimistic],
+  );
+
+  const postponeReminder = useCallback(
+    async (id: number, untilISO: string) => {
+      await optimistic(
+        (list) => list.map((r) => (r.id === id ? { ...r, snoozed_until: untilISO } : r)),
+        () => snoozeReminder(id, untilISO),
+        "Не удалось отложить напоминание",
+      );
+    },
+    [optimistic],
+  );
 
   const purgeCompleted = useCallback(async () => {
-    await clearCompleted();
-    bumpDataVersion();
-  }, []);
+    await optimistic(
+      (list) => list.filter((r) => r.completed_at === null),
+      () => clearCompleted(),
+      "Не удалось очистить выполненные",
+    );
+  }, [optimistic]);
 
-  const doDelete = async (id: number) => {
-    await deleteReminder(id);
-    bumpDataVersion();
-    show("Напоминание удалено", "success");
-  };
+  const doDelete = useCallback(
+    async (id: number) => {
+      const ok = await optimistic(
+        (list) => list.filter((r) => r.id !== id),
+        () => deleteReminder(id),
+        "Не удалось удалить напоминание",
+      );
+      if (ok) show("Напоминание удалено", "success");
+    },
+    [optimistic, show],
+  );
+
+  const ctx = useMemo(
+    () => ({
+      addReminder,
+      saveReminder,
+      removeReminder,
+      finishReminder,
+      postponeReminder,
+      purgeCompleted,
+      openCreateReminder,
+      openEditReminder,
+    }),
+    [
+      addReminder,
+      saveReminder,
+      removeReminder,
+      finishReminder,
+      postponeReminder,
+      purgeCompleted,
+      openCreateReminder,
+      openEditReminder,
+    ],
+  );
+
+  const closeSheet = useCallback(() => setSheet(null), []);
+  const closeConfirm = useCallback(() => setConfirmId(null), []);
 
   return (
-    <Context.Provider
-      value={{
-        addReminder,
-        saveReminder,
-        removeReminder,
-        finishReminder,
-        postponeReminder,
-        purgeCompleted,
-        openCreateReminder,
-        openEditReminder,
-      }}
-    >
+    <Context.Provider value={ctx}>
       {children}
 
       <ReminderSheet
@@ -189,14 +275,14 @@ export function RemindersProvider({ children }: { children: ReactNode }) {
           setSheet(null);
           setConfirmId(id);
         }}
-        onClose={() => setSheet(null)}
+        onClose={closeSheet}
       />
 
       <ConfirmDialog
         open={confirmId !== null}
         message="Удалить это напоминание?"
         onConfirm={() => confirmId !== null && doDelete(confirmId)}
-        onClose={() => setConfirmId(null)}
+        onClose={closeConfirm}
       />
     </Context.Provider>
   );

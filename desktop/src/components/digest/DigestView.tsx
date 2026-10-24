@@ -103,7 +103,7 @@ export function DigestView() {
 
   const q = query.trim();
   const loadResults = useCallback(() => (q ? searchItems(q) : Promise.resolve([])), [q]);
-  const { data: results } = useQuery(loadResults);
+  const { data: results } = useQuery(loadResults, { key: `digest-search:${q}`, keepPrevious: true });
 
   const runCollect = async () => {
     const result = await collect();

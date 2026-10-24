@@ -1,21 +1,9 @@
 import { CalendarView } from "@/components/calendar/CalendarView";
-import { getEventsInRange } from "@/db/queries/events";
-import { getMarksInRange } from "@/db/queries/marks";
-import { listPeople } from "@/db/queries/people";
-import { TIMELINE_MIN_DATE, TIMELINE_MAX_DATE } from "@/lib/constants";
+import { loadCalendar } from "@/db/queries/loaders";
 import { useQuery } from "@/lib/useQuery";
 import { useEvents } from "@/components/events/EventsProvider";
 import { usePeople } from "@/components/events/PeopleProvider";
 import { filterStore } from "@/lib/search";
-
-const loadCalendar = async () => {
-  const [events, marks, people] = await Promise.all([
-    getEventsInRange(TIMELINE_MIN_DATE, TIMELINE_MAX_DATE),
-    getMarksInRange(TIMELINE_MIN_DATE, TIMELINE_MAX_DATE),
-    listPeople(),
-  ]);
-  return { events, marks, people };
-};
 
 export function CalendarPage() {
   const { openView, openDay, openCreate, openMarkMenu } = useEvents();
@@ -41,7 +29,7 @@ export function CalendarPage() {
       onFilterChange={filterStore.set}
       onEventClick={openView}
       onDayOpen={openDay}
-      onCreateRequest={(iso) => openCreate(iso)}
+      onCreateRequest={openCreate}
       onMarkOpen={openDay}
       onMarkMenu={openMarkMenu}
       onPersonOpen={openViewPerson}

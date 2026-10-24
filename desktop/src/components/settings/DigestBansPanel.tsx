@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { Ban, ChevronDown } from "lucide-react";
 import { FUSED } from "@/components/digest/DigestRows";
@@ -10,8 +10,7 @@ const SPRING = { type: "spring", bounce: 0, duration: 0.35 } as const;
 
 export function DigestBansPanel() {
   const version = digestVersionStore.use();
-  const loadBans = useCallback(() => listBans(), [version]);
-  const { data } = useQuery(loadBans);
+  const { data } = useQuery(listBans, { rev: version });
   const [open, setOpen] = useState(false);
   const bans = data ?? [];
   const expanded = open && bans.length > 0;

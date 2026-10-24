@@ -126,7 +126,10 @@ export async function completeReminder(id: number): Promise<void> {
     reminder.repeat_unit,
     now.slice(0, 10),
   );
-  await db.execute("UPDATE reminders SET date = ?, snoozed_until = NULL WHERE id = ?", [next, id]);
+  await db.execute("UPDATE reminders SET date = ?, snoozed_until = NULL WHERE id = ?", [
+    next ?? reminder.date,
+    id,
+  ]);
 }
 
 export async function snoozeReminder(id: number, untilISO: string): Promise<void> {

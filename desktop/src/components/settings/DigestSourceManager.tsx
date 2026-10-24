@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useState } from "react";
 import { format } from "date-fns";
 import { ChevronRight, Flame, Github, MessageSquare, Plus, Rss, TriangleAlert, type LucideIcon } from "lucide-react";
 import { Dialog } from "@/components/ui/Dialog";
@@ -52,8 +52,7 @@ type Edit = { source: DigestSource | null } | null;
 
 export function DigestSourceManager({ hnMinPoints }: { hnMinPoints: number }) {
   const version = digestVersionStore.use();
-  const loadSources = useCallback(() => listSources(), [version]);
-  const { data } = useQuery(loadSources);
+  const { data } = useQuery(listSources, { rev: version });
   const { show } = useToast();
   const [edit, setEdit] = useState<Edit>(null);
   const [confirm, setConfirm] = useState<DigestSource | null>(null);

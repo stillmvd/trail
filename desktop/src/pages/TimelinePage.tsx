@@ -1,18 +1,8 @@
 import { TimelineStage } from "@/components/timeline/TimelineStage";
-import { getEventsInRange } from "@/db/queries/events";
-import { getMarksInRange } from "@/db/queries/marks";
-import { TIMELINE_MIN_DATE, TIMELINE_MAX_DATE } from "@/lib/constants";
+import { loadTimeline } from "@/db/queries/loaders";
 import { useQuery } from "@/lib/useQuery";
 import { useEvents } from "@/components/events/EventsProvider";
 import { filterStore } from "@/lib/search";
-
-const loadTimeline = async () => {
-  const [events, marks] = await Promise.all([
-    getEventsInRange(TIMELINE_MIN_DATE, TIMELINE_MAX_DATE),
-    getMarksInRange(TIMELINE_MIN_DATE, TIMELINE_MAX_DATE),
-  ]);
-  return { events, marks };
-};
 
 export function TimelinePage() {
   const { openView, openDay, openCreate, openMarkMenu } = useEvents();

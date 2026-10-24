@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useMemo, useRef, useState, type ReactNode } from "react";
 import { Trash2 } from "lucide-react";
 import { useToast } from "@/components/ui/Toast";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
@@ -7,7 +7,8 @@ import { EventSheet, type EventSheetState } from "@/components/timeline/EventShe
 import { DayEventsDialog } from "@/components/timeline/DayEventsDialog";
 import type { EventFormPayload } from "@/components/timeline/EventForm";
 import type { MarkFormPayload } from "@/components/timeline/MarkForm";
-import { useQuery } from "@/lib/useQuery";
+import { useQuery, getQueryData, setQueryData } from "@/lib/useQuery";
+import { listAllEvents, loadTimeline, loadCalendar } from "@/db/queries/loaders";
 import { bumpDataVersion } from "@/lib/dataVersion";
 import {
   TIMELINE_MIN_DATE,
@@ -67,6 +68,15 @@ const eventInput = (p: EventFormPayload) => ({
   track: p.track ? 1 : 0,
 });
 
+async function finalizePhoto(eventId: number, photo: EventFormPayload["photo"]) {
+  if (photo.kind === "keep") return;
+  for (const m of await listMediaByEvent(eventId)) {
+    const path = await deleteMedia(m.id);
+    if (path) await deleteMediaFile(path);
+  }
+  if (photo.kind === "set") await addMedia(eventId, await writeMediaFile(photo.file));
+}
+
 export function EventsProvider({ children }: { children: ReactNode }) {
   const { show } = useToast();
   const { data: categories } = useQuery(listCategories);
@@ -77,93 +87,197 @@ export function EventsProvider({ children }: { children: ReactNode }) {
   const [confirmEvent, setConfirmEvent] = useState<number | null>(null);
   const [markMenu, setMarkMenu] = useState<{ mark: Mark; x: number; y: number } | null>(null);
 
-  const finalizePhoto = async (eventId: number, photo: EventFormPayload["photo"]) => {
-    if (photo.kind === "keep") return;
-    for (const m of await listMediaByEvent(eventId)) {
-      const path = await deleteMedia(m.id);
-      if (path) await deleteMediaFile(path);
-    }
-    if (photo.kind === "set") await addMedia(eventId, await writeMediaFile(photo.file));
-  };
-
   const openCreate = useCallback((dateISO: string) => {
     setDay(null);
     setSheet({ mode: "create", dateISO });
   }, []);
 
-  const openView = useCallback(async (event: TimelineEvent) => {
-    const media = await listMediaByEvent(event.id);
-    setDay(null);
-    setSheet({ mode: "view", event, media });
+  const openView = useCallback(
+    async (event: TimelineEvent) => {
+      try {
+        const media = await listMediaByEvent(event.id);
+        setDay(null);
+        setSheet({ mode: "view", event, media });
+      } catch (e) {
+        show(`Не удалось открыть событие: ${String(e)}`, "error");
+      }
+    },
+    [show],
+  );
+
+  const editEvent = useCallback(
+    async (event: TimelineEvent) => {
+      try {
+        const media = await listMediaByEvent(event.id);
+        setSheet({ mode: "edit", event, media });
+      } catch (e) {
+        show(`Не удалось открыть событие: ${String(e)}`, "error");
+      }
+    },
+    [show],
+  );
+
+  const openDay = useCallback(
+    async (dateISO: string) => {
+      try {
+        const [all, marks] = await Promise.all([
+          getEventsInRange(TIMELINE_MIN_DATE, TIMELINE_MAX_DATE),
+          getMarksInRange(dateISO, dateISO),
+        ]);
+        const events = all.filter(
+          (e) =>
+            e.date === dateISO ||
+            (!!e.end_date && e.date <= dateISO && e.end_date >= dateISO),
+        );
+        setSheet(null);
+        setDay({ dateISO, events, marks });
+      } catch (e) {
+        show(`Не удалось открыть день: ${String(e)}`, "error");
+      }
+    },
+    [show],
+  );
+
+  const startEdit = useCallback(() => {
+    setSheet((s) => (s?.mode === "view" ? { mode: "edit", event: s.event, media: s.media } : s));
   }, []);
 
-  const openDay = useCallback(async (dateISO: string) => {
-    const [all, marks] = await Promise.all([
-      getEventsInRange(TIMELINE_MIN_DATE, TIMELINE_MAX_DATE),
-      getMarksInRange(dateISO, dateISO),
-    ]);
-    const events = all.filter(
-      (e) =>
-        e.date === dateISO ||
-        (!!e.end_date && e.date <= dateISO && e.end_date >= dateISO),
-    );
-    setSheet(null);
-    setDay({ dateISO, events, marks });
-  }, []);
+  const saving = useRef(false);
 
-  const startEdit = () => {
-    if (sheet?.mode === "view") setSheet({ mode: "edit", event: sheet.event, media: sheet.media });
-  };
+  const doCreate = useCallback(
+    async (p: EventFormPayload) => {
+      const err = validate(p);
+      if (err) return show(err, "error");
+      if (saving.current) return;
+      saving.current = true;
+      try {
+        const id = await createEvent(eventInput(p));
+        setSheet(null);
+        try {
+          await finalizePhoto(id, p.photo);
+        } catch (e) {
+          bumpDataVersion();
+          return show(`Событие создано, но фото не сохранено: ${String(e)}`, "error");
+        }
+        bumpDataVersion();
+        show("Событие создано", "success");
+      } catch (e) {
+        show(`Не удалось создать событие: ${String(e)}`, "error");
+      } finally {
+        saving.current = false;
+      }
+    },
+    [show],
+  );
 
-  const doCreate = async (p: EventFormPayload) => {
-    const err = validate(p);
-    if (err) return show(err, "error");
-    setSheet(null);
-    const id = await createEvent(eventInput(p));
-    await finalizePhoto(id, p.photo);
-    bumpDataVersion();
-    show("Событие создано", "success");
-  };
+  const doUpdate = useCallback(
+    async (id: number, p: EventFormPayload) => {
+      const err = validate(p);
+      if (err) return show(err, "error");
+      if (saving.current) return;
+      saving.current = true;
+      try {
+        await updateEvent(id, eventInput(p));
+        setSheet(null);
+        try {
+          await finalizePhoto(id, p.photo);
+        } catch (e) {
+          bumpDataVersion();
+          return show(`Изменения сохранены, но фото не обновлено: ${String(e)}`, "error");
+        }
+        bumpDataVersion();
+        show("Изменения сохранены", "success");
+      } catch (e) {
+        show(`Не удалось сохранить: ${String(e)}`, "error");
+      } finally {
+        saving.current = false;
+      }
+    },
+    [show],
+  );
 
-  const doUpdate = async (id: number, p: EventFormPayload) => {
-    const err = validate(p);
-    if (err) return show(err, "error");
-    setSheet(null);
-    await updateEvent(id, eventInput(p));
-    await finalizePhoto(id, p.photo);
-    bumpDataVersion();
-    show("Изменения сохранены", "success");
-  };
+  const doDelete = useCallback(
+    async (id: number) => {
+      setSheet(null);
+      setDay(null);
+      const snapshot = [
+        getQueryData<TimelineEvent[]>(listAllEvents),
+        getQueryData<Awaited<ReturnType<typeof loadTimeline>>>(loadTimeline),
+        getQueryData<Awaited<ReturnType<typeof loadCalendar>>>(loadCalendar),
+      ] as const;
+      setQueryData<TimelineEvent[]>(listAllEvents, (d) => d && d.filter((e) => e.id !== id));
+      setQueryData<Awaited<ReturnType<typeof loadTimeline>>>(
+        loadTimeline,
+        (d) => d && { ...d, events: d.events.filter((e) => e.id !== id) },
+      );
+      setQueryData<Awaited<ReturnType<typeof loadCalendar>>>(
+        loadCalendar,
+        (d) => d && { ...d, events: d.events.filter((e) => e.id !== id) },
+      );
+      try {
+        const media = await listMediaByEvent(id);
+        await deleteEvent(id);
+        for (const m of media) await deleteMediaFile(m.path).catch(() => undefined);
+        bumpDataVersion();
+        show("Событие удалено", "success");
+      } catch (e) {
+        setQueryData(listAllEvents, snapshot[0]);
+        setQueryData(loadTimeline, snapshot[1]);
+        setQueryData(loadCalendar, snapshot[2]);
+        bumpDataVersion();
+        show(`Не удалось удалить событие: ${String(e)}`, "error");
+      }
+    },
+    [show],
+  );
 
-  const doDelete = async (id: number) => {
-    setSheet(null);
-    setDay(null);
-    for (const m of await listMediaByEvent(id)) await deleteMediaFile(m.path);
-    await deleteEvent(id);
-    bumpDataVersion();
-    show("Событие удалено", "success");
-  };
+  const doCreateMark = useCallback(
+    async (p: MarkFormPayload) => {
+      if (saving.current) return;
+      saving.current = true;
+      try {
+        await createMark(p);
+        setSheet(null);
+        bumpDataVersion();
+        show("Отметка создана", "success");
+      } catch (e) {
+        show(`Не удалось создать отметку: ${String(e)}`, "error");
+      } finally {
+        saving.current = false;
+      }
+    },
+    [show],
+  );
 
-  const doCreateMark = async (p: MarkFormPayload) => {
-    setSheet(null);
-    await createMark(p);
-    bumpDataVersion();
-    show("Отметка создана", "success");
-  };
-
-  const doDeleteMark = async (mark: Mark) => {
-    setDay((d) => (d ? { ...d, marks: d.marks.filter((m) => m.id !== mark.id) } : d));
-    await deleteMark(mark.id);
-    bumpDataVersion();
-    show("Отметка удалена", "success");
-  };
+  const doDeleteMark = useCallback(
+    async (mark: Mark) => {
+      setDay((d) => (d ? { ...d, marks: d.marks.filter((m) => m.id !== mark.id) } : d));
+      try {
+        await deleteMark(mark.id);
+        bumpDataVersion();
+        show("Отметка удалена", "success");
+      } catch (e) {
+        setDay((d) => (d ? { ...d, marks: [...d.marks, mark] } : d));
+        show(`Не удалось удалить отметку: ${String(e)}`, "error");
+      }
+    },
+    [show],
+  );
 
   const openMarkMenu = useCallback((mark: Mark, x: number, y: number) => {
     setMarkMenu({ mark, x, y });
   }, []);
 
+  const ctx = useMemo(
+    () => ({ openCreate, openView, openDay, openMarkMenu }),
+    [openCreate, openView, openDay, openMarkMenu],
+  );
+
+  const requestDelete = useCallback((id: number) => setConfirmEvent(id), []);
+  const closeSheet = useCallback(() => setSheet(null), []);
+
   return (
-    <Context.Provider value={{ openCreate, openView, openDay, openMarkMenu }}>
+    <Context.Provider value={ctx}>
       {children}
 
       <EventSheet
@@ -174,8 +288,8 @@ export function EventsProvider({ children }: { children: ReactNode }) {
         onCreate={doCreate}
         onCreateMark={doCreateMark}
         onUpdate={doUpdate}
-        onDelete={(id) => setConfirmEvent(id)}
-        onClose={() => setSheet(null)}
+        onDelete={requestDelete}
+        onClose={closeSheet}
       />
 
       <DayEventsDialog
@@ -184,7 +298,7 @@ export function EventsProvider({ children }: { children: ReactNode }) {
         events={day?.events ?? []}
         marks={day?.marks ?? []}
         onView={openView}
-        onEdit={(e) => listMediaByEvent(e.id).then((media) => setSheet({ mode: "edit", event: e, media }))}
+        onEdit={editEvent}
         onDelete={(e) => setConfirmEvent(e.id)}
         onDeleteMark={doDeleteMark}
         onCreate={openCreate}
