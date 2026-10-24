@@ -4,7 +4,7 @@ import { todayISO, toISO } from "./dates";
 export type PluralForms = [one: string, few: string, many: string];
 
 export const YEARS: PluralForms = ["год", "года", "лет"];
-const MONTHS: PluralForms = ["месяц", "месяца", "месяцев"];
+export const MONTHS: PluralForms = ["месяц", "месяца", "месяцев"];
 export const DAYS: PluralForms = ["день", "дня", "дней"];
 const HOURS: PluralForms = ["час", "часа", "часов"];
 const MINUTES: PluralForms = ["минута", "минуты", "минут"];

@@ -1,17 +1,10 @@
-import { Cake, CalendarClock, CalendarHeart, Gift, Hourglass, Pencil, Trash2 } from "lucide-react";
-import { formatFullRu, formatDayMonthRu, formatWeekdayFullRu } from "@/lib/dates";
-import { remainingUntil } from "@/lib/duration";
-import {
-  nextBirthdayISO,
-  daysUntilBirthday,
-  formatCurrentAge,
-  formatTurningAge,
-} from "@/lib/birthday";
+import { Pencil, Trash2 } from "lucide-react";
+import { formatFullRu, formatDayMonthRu } from "@/lib/dates";
 import { mediaSrc } from "@/lib/paths";
 import { Button } from "@/components/ui/Button";
 import { SideSheet } from "@/components/ui/SideSheet";
-import { MetricChip } from "@/components/ui/MetricChip";
 import { PersonForm, type PersonFormPayload } from "./PersonForm";
+import { AgeHero, BirthdayTiles, PersonPlaceholder } from "./BirthdayParts";
 import type { Person } from "@/db/queries/people";
 
 const cap = (s: string) => (s ? s[0].toUpperCase() + s.slice(1) : s);
@@ -78,73 +71,25 @@ export function PersonSheet({ state, onStartEdit, onCreate, onUpdate, onDelete, 
 }
 
 function PersonView({ person }: { person: Person }) {
-  const nb = nextBirthdayISO(person.birth_date);
-  const days = daysUntilBirthday(person.birth_date);
-  const today = days === 0;
-  const age = formatCurrentAge(person.birth_date, person.has_year);
-  const turning = formatTurningAge(person.birth_date, person.has_year);
-
   return (
     <div className="flex flex-col gap-4">
-      <div
-        className="flex aspect-video w-full items-center justify-center overflow-hidden rounded-3xl"
-        style={{ background: "var(--ds-surface-2)" }}
-      >
+      <div className="aspect-video w-full overflow-hidden rounded-3xl">
         {person.photo ? (
-          <img
-            src={mediaSrc(person.photo)}
-            alt=""
-            decoding="async"
-            className="h-full w-full object-cover"
-          />
+          <img src={mediaSrc(person.photo)} alt="" decoding="async" className="h-full w-full object-cover" />
         ) : (
-          <Cake size={64} strokeWidth={1.25} style={{ color: "var(--ds-accent-ink)" }} />
+          <PersonPlaceholder />
         )}
       </div>
 
       <div>
-        <h3 className="text-2xl font-bold leading-tight tracking-tight text-app-text">
-          {person.name}
-        </h3>
+        <h3 className="text-2xl font-bold leading-tight tracking-tight text-app-text">{person.name}</h3>
         <p className="mt-0.5 text-sm text-muted">
-          {person.has_year
-            ? formatFullRu(person.birth_date)
-            : cap(formatDayMonthRu(person.birth_date))}
+          {person.has_year ? formatFullRu(person.birth_date) : cap(formatDayMonthRu(person.birth_date))}
         </p>
       </div>
 
-      <div className="rounded-3xl px-5 py-4" style={{ background: "var(--ds-surface-3)" }}>
-        <span className="flex items-center gap-1.5 text-xs font-medium text-muted">
-          <Gift size={14} strokeWidth={1.75} />
-          {today ? "День рождения" : "До дня рождения"}
-        </span>
-        <span className="mt-1 block text-[28px] font-bold leading-none tabular-nums text-app-text">
-          {today ? "Сегодня! 🎂" : remainingUntil(nb)}
-        </span>
-      </div>
-
-      <div className="flex flex-wrap gap-2">
-        {age && (
-          <MetricChip
-            icon={<Hourglass size={12} strokeWidth={1.75} />}
-            label="Сейчас"
-            value={age}
-          />
-        )}
-        {turning && (
-          <MetricChip icon={<Cake size={12} strokeWidth={1.75} />} label="Исполнится" value={turning} />
-        )}
-        <MetricChip
-          icon={<CalendarHeart size={12} strokeWidth={1.75} />}
-          label="Дата"
-          value={cap(formatDayMonthRu(nb))}
-        />
-        <MetricChip
-          icon={<CalendarClock size={12} strokeWidth={1.75} />}
-          label="День"
-          value={cap(formatWeekdayFullRu(nb))}
-        />
-      </div>
+      <AgeHero person={person} />
+      <BirthdayTiles person={person} />
     </div>
   );
 }

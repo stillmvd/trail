@@ -14,7 +14,6 @@ import { MarkTypeManager } from "@/components/settings/MarkTypeManager";
 import { BackupPanel } from "@/components/settings/BackupPanel";
 import { UpdatePanel } from "@/components/settings/UpdatePanel";
 import { ImageGenPanel } from "@/components/settings/ImageGenPanel";
-import { useLiveSeconds, setLiveSeconds } from "@/components/birthdays/useLiveSeconds";
 import { themeStore, type ThemePref } from "@/lib/theme";
 import { closeToTrayStore } from "@/lib/behavior";
 import { notifyBirthdaysStore, notifyRemindersStore } from "@/lib/notifications";
@@ -72,7 +71,6 @@ function Row({
 
 export function SettingsPage() {
   const theme = themeStore.use();
-  const liveSeconds = useLiveSeconds();
   const closeToTray = closeToTrayStore.use() === "1";
   const notifyBirthdays = notifyBirthdaysStore.use() === "1";
   const notifyReminders = notifyRemindersStore.use() === "1";
@@ -158,19 +156,6 @@ export function SettingsPage() {
               checked={notifyReminders}
               onChange={(v) => notifyRemindersStore.set(v ? "1" : "0")}
               label="Уведомления о напоминаниях"
-            />
-          </Row>
-        </Section>
-
-        <Section title="Дни рождения">
-          <Row
-            title="Живой отсчёт секунд"
-            description="Тикающие секунды на карточках в последние дни до дня рождения"
-          >
-            <Switch
-              checked={liveSeconds}
-              onChange={setLiveSeconds}
-              label="Живой отсчёт секунд"
             />
           </Row>
         </Section>

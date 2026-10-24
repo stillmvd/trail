@@ -643,9 +643,25 @@ h2 {
   }
 }
 
+@keyframes glass-float {
+  0%,
+  100% {
+    transform: translateY(0) rotate(0);
+  }
+  50% {
+    transform: translateY(-3px) rotate(-3deg);
+  }
+}
+
+.glass-float {
+  transform-origin: 50% 60%;
+  animation: glass-float 4.2s ease-in-out infinite both;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .tl-sig-play .tl-sig-star,
-  .tl-sig-play .tl-sig-sweep {
+  .tl-sig-play .tl-sig-sweep,
+  .glass-float {
     animation: none;
   }
 }

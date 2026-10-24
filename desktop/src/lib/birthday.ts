@@ -1,4 +1,4 @@
-import { differenceInCalendarDays, parseISO } from "date-fns";
+import { differenceInCalendarDays, intervalToDuration, parseISO } from "date-fns";
 import { todayISO } from "./dates";
 import { upcomingAnniversary, unit, YEARS } from "./duration";
 
@@ -23,16 +23,13 @@ export function turningAge(birthDateISO: string, hasYear: number): number | null
   return upcomingAnniversary(birthDateISO).ordinal;
 }
 
-// Текущий полный возраст на сегодня. null — если год рождения неизвестен.
-export function currentAge(birthDateISO: string, hasYear: number): number | null {
-  if (!hasYear) return null;
-  const { ordinal } = upcomingAnniversary(birthDateISO);
-  return daysUntilBirthday(birthDateISO) === 0 ? ordinal : ordinal - 1;
-}
+export type AgeParts = { years: number; months: number; days: number };
 
-export function formatCurrentAge(birthDateISO: string, hasYear: number): string | null {
-  const age = currentAge(birthDateISO, hasYear);
-  return age === null ? null : unit(age, YEARS);
+export function currentAgeParts(birthDateISO: string, hasYear: number): AgeParts | null {
+  if (!hasYear) return null;
+  if (daysUntilBirthday(birthDateISO) === 0) return { years: upcomingAnniversary(birthDateISO).ordinal, months: 0, days: 0 };
+  const d = intervalToDuration({ start: parseISO(birthDateISO), end: parseISO(todayISO()) });
+  return { years: d.years ?? 0, months: d.months ?? 0, days: d.days ?? 0 };
 }
 
 export function formatTurningAge(birthDateISO: string, hasYear: number): string | null {
