@@ -1,5 +1,7 @@
 import { useMemo } from "react";
+import { motion } from "motion/react";
 import { Target } from "lucide-react";
+import { appear } from "@/lib/appear";
 import { TrackingCard } from "./TrackingCard";
 import { useTodayISO } from "./clock";
 import type { TimelineEvent } from "@/db/queries/events";
@@ -16,6 +18,7 @@ function Section({
   variant,
   showHeader,
   accentFirst,
+  from = 0,
   onEventClick,
 }: {
   title: string;
@@ -23,6 +26,7 @@ function Section({
   variant: "past" | "future";
   showHeader: boolean;
   accentFirst?: boolean;
+  from?: number;
   onEventClick: (event: TimelineEvent) => void;
 }) {
   return (
@@ -45,13 +49,14 @@ function Section({
       )}
       <div className="grid grid-cols-[repeat(auto-fill,minmax(364px,1fr))] gap-5">
         {events.map((event, i) => (
-          <TrackingCard
-            key={event.id}
-            event={event}
-            variant={variant}
-            highlight={accentFirst && i === 0}
-            onClick={onEventClick}
-          />
+          <motion.div key={event.id} {...appear(from + i)} className="grid">
+            <TrackingCard
+              event={event}
+              variant={variant}
+              highlight={accentFirst && i === 0}
+              onClick={onEventClick}
+            />
+          </motion.div>
         ))}
       </div>
     </section>
@@ -113,6 +118,7 @@ export function TrackingView({
               variant="past"
               showHeader={future.length > 0}
               accentFirst={future.length === 0}
+              from={future.length}
               onEventClick={onEventClick}
             />
           )}

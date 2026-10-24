@@ -18,6 +18,7 @@ import {
 import { ContextMenu } from "@/components/ui/ContextMenu";
 import { Dialog } from "@/components/ui/Dialog";
 import { modeStore } from "@/lib/mode";
+import { appear } from "@/lib/appear";
 import { resolveIconOrNull } from "@/lib/icons";
 import { isBirthdayToday, formatTurningAge } from "@/lib/birthday";
 import { useTodayISO } from "@/components/tracking/clock";
@@ -65,12 +66,6 @@ function RoundArrow({ label, onAccent }: { label: string; onAccent?: boolean }) 
     </button>
   );
 }
-
-const appear = (i: number) => ({
-  initial: { opacity: 0, y: 8 },
-  animate: { opacity: 1, y: 0 },
-  transition: { type: "spring" as const, duration: 0.4, bounce: 0, delay: i * 0.06 },
-});
 
 function Card({
   title,

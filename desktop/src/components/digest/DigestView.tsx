@@ -1,5 +1,7 @@
 import { useCallback, useMemo, useRef, useState, type MouseEvent } from "react";
+import { motion } from "motion/react";
 import { Ban } from "lucide-react";
+import { appear } from "@/lib/appear";
 import { openArticle } from "@/lib/digest/open";
 import { format } from "date-fns";
 import { ru } from "date-fns/locale";
@@ -133,20 +135,22 @@ export function DigestView() {
   return (
     <div className="h-full w-full overflow-y-auto px-6 py-8 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
       <div className="mx-auto flex max-w-6xl flex-col gap-10">
-        <DigestHeader
-          date={shown?.date ?? today}
-          viewed={shown ? shown.viewed_at !== null : null}
-          progress={shown && main.length ? { read: main.filter(isRead).length, total: main.length } : null}
-          query={query}
-          searchRef={searchRef}
-          onQuery={setQuery}
-          onMarkViewed={shown ? markViewed : null}
-          onCollect={runCollect}
-          onSettings={openSettings}
-          saved={savedView ? { count: saved.length } : null}
-          onToggleSaved={() => setSavedView((v) => !v)}
-          onArchive={() => setArchiveOpen(true)}
-        />
+        <motion.div {...appear(0)}>
+          <DigestHeader
+            date={shown?.date ?? today}
+            viewed={shown ? shown.viewed_at !== null : null}
+            progress={shown && main.length ? { read: main.filter(isRead).length, total: main.length } : null}
+            query={query}
+            searchRef={searchRef}
+            onQuery={setQuery}
+            onMarkViewed={shown ? markViewed : null}
+            onCollect={runCollect}
+            onSettings={openSettings}
+            saved={savedView ? { count: saved.length } : null}
+            onToggleSaved={() => setSavedView((v) => !v)}
+            onArchive={() => setArchiveOpen(true)}
+          />
+        </motion.div>
 
         {q ? (
           results && results.length > 0 ? (
@@ -176,8 +180,8 @@ export function DigestView() {
                 onAction={emptyAction}
               />
             )}
-            {groups.map((group) => (
-              <section key={group.topic} className="flex flex-col gap-4">
+            {groups.map((group, gi) => (
+              <motion.section key={group.topic} {...appear(gi + 1)} className="flex flex-col gap-4">
                 <GroupHead group={group} />
                 <div className="grid grid-cols-[repeat(auto-fill,minmax(300px,1fr))] items-start gap-4">
                   {group.entries.map((entry) => (
@@ -194,7 +198,7 @@ export function DigestView() {
                     />
                   ))}
                 </div>
-              </section>
+              </motion.section>
             ))}
             {run.state === "running" && <DigestBusy />}
             <NearList entries={near} onOpen={openEntry} />

@@ -1,5 +1,7 @@
 import { useMemo } from "react";
+import { motion } from "motion/react";
 import { Cake, Plus } from "lucide-react";
+import { appear } from "@/lib/appear";
 import { BirthdayCard } from "./BirthdayCard";
 import { Button } from "@/components/ui/Button";
 import { useTodayISO } from "@/components/tracking/clock";
@@ -11,12 +13,14 @@ function Section({
   people,
   showHeader,
   accentFirst,
+  from = 0,
   onPersonClick,
 }: {
   title: string;
   people: Person[];
   showHeader: boolean;
   accentFirst?: boolean;
+  from?: number;
   onPersonClick: (person: Person) => void;
 }) {
   return (
@@ -39,12 +43,9 @@ function Section({
       )}
       <div className="grid grid-cols-[repeat(auto-fill,minmax(364px,1fr))] gap-5">
         {people.map((person, i) => (
-          <BirthdayCard
-            key={person.id}
-            person={person}
-            highlight={accentFirst && i === 0}
-            onClick={onPersonClick}
-          />
+          <motion.div key={person.id} {...appear(from + i)} className="grid">
+            <BirthdayCard person={person} highlight={accentFirst && i === 0} onClick={onPersonClick} />
+          </motion.div>
         ))}
       </div>
     </section>
@@ -121,6 +122,7 @@ export function BirthdaysView({
               people={upcoming}
               showHeader={today.length > 0}
               accentFirst={today.length === 0}
+              from={today.length}
               onPersonClick={onPersonClick}
             />
           )}

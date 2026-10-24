@@ -1,5 +1,7 @@
 import { useMemo, useRef } from "react";
+import { motion } from "motion/react";
 import { Images } from "lucide-react";
+import { appear } from "@/lib/appear";
 import { formatMonthRu } from "@/lib/dates";
 import { Button } from "@/components/ui/Button";
 import { EventCard } from "./EventCard";
@@ -73,6 +75,13 @@ export function GalleryView({
     );
   }
 
+  let seen = 0;
+  const starts = groups.map((g) => {
+    const s = seen;
+    seen += g.events.length;
+    return s;
+  });
+
   return (
     <div className="relative h-full w-full">
       <div
@@ -98,12 +107,9 @@ export function GalleryView({
               </div>
               <div className="grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-5">
                 {group.events.map((event, i) => (
-                  <EventCard
-                    key={event.id}
-                    event={event}
-                    highlight={gi === 0 && i === 0}
-                    onClick={onEventClick}
-                  />
+                  <motion.div key={event.id} {...appear(starts[gi] + i)} className="grid">
+                    <EventCard event={event} highlight={gi === 0 && i === 0} onClick={onEventClick} />
+                  </motion.div>
                 ))}
               </div>
             </section>

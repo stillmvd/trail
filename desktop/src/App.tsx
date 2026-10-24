@@ -1,4 +1,5 @@
 import { lazy, Suspense, type ComponentType } from "react";
+import { MotionConfig } from "motion/react";
 import { Titlebar } from "./components/Titlebar";
 import { NavigationRail } from "./components/nav/NavigationRail";
 import { ToastProvider } from "./components/ui/Toast";
@@ -49,29 +50,31 @@ export default function App() {
   const Page = PAGES[mode];
 
   return (
-    <ToastProvider>
-      <RemindersProvider>
-        <EventsProvider>
-          <PeopleProvider>
-            <div className="flex h-screen flex-col bg-surface-0 text-app-text">
-              <Titlebar />
-              <div className="flex min-h-0 flex-1">
-                <NavigationRail />
-                <main className="min-h-0 flex-1 overflow-hidden">
-                  <Page />
-                </main>
+    <MotionConfig reducedMotion="user">
+      <ToastProvider>
+        <RemindersProvider>
+          <EventsProvider>
+            <PeopleProvider>
+              <div className="flex h-screen flex-col bg-surface-0 text-app-text">
+                <Titlebar />
+                <div className="flex min-h-0 flex-1">
+                  <NavigationRail />
+                  <main className="min-h-0 flex-1 overflow-hidden">
+                    <Page />
+                  </main>
+                </div>
               </div>
-            </div>
-            <SearchHost />
-            <UpdateToast lang="ru" />
-            {Agentation && (
-              <Suspense>
-                <Agentation appName="Trail" endpoint="http://localhost:4747" />
-              </Suspense>
-            )}
-          </PeopleProvider>
-        </EventsProvider>
-      </RemindersProvider>
-    </ToastProvider>
+              <SearchHost />
+              <UpdateToast lang="ru" />
+              {Agentation && (
+                <Suspense>
+                  <Agentation appName="Trail" endpoint="http://localhost:4747" />
+                </Suspense>
+              )}
+            </PeopleProvider>
+          </EventsProvider>
+        </RemindersProvider>
+      </ToastProvider>
+    </MotionConfig>
   );
 }

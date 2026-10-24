@@ -1,5 +1,7 @@
 import type { ReactNode } from "react";
+import { motion } from "motion/react";
 import { FolderOpen } from "lucide-react";
+import { appearItem, appearList } from "@/lib/appear";
 import { getVersion } from "@tauri-apps/api/app";
 import { appDataDir } from "@tauri-apps/api/path";
 import { openPath } from "@tauri-apps/plugin-opener";
@@ -37,7 +39,7 @@ function Section({
   children: ReactNode;
 }) {
   return (
-    <section className="flex flex-col gap-4 rounded-4xl bg-surface-1 p-7">
+    <motion.section {...appearItem} className="flex flex-col gap-4 rounded-4xl bg-surface-1 p-7">
       <div>
         <h2 className="inline-flex rounded-full bg-surface-2 px-3.5 py-1.5 text-[11px] font-medium uppercase tracking-[0.12em] text-muted">
           {title}
@@ -45,7 +47,7 @@ function Section({
         {description && <p className="mt-2.5 text-sm text-muted">{description}</p>}
       </div>
       {children}
-    </section>
+    </motion.section>
   );
 }
 
@@ -98,13 +100,13 @@ export function SettingsPage() {
 
   return (
     <div className="h-full overflow-y-auto px-10 py-10">
-      <div className="mx-auto flex max-w-3xl flex-col gap-6">
-        <div>
+      <motion.div {...appearList} className="mx-auto flex max-w-3xl flex-col gap-6">
+        <motion.div {...appearItem}>
           <p className="m-0 mb-3 text-xs font-medium uppercase tracking-[0.24em] text-muted">
             trail · приложение
           </p>
           <h1 className="m-0 text-4xl font-bold leading-none tracking-[-0.045em]">Настройки</h1>
-        </div>
+        </motion.div>
 
         <Section title="Внешний вид" description="Тема оформления приложения.">
           <SegmentedControl
@@ -203,7 +205,7 @@ export function SettingsPage() {
           <MarkTypeManager />
         </Section>
 
-        <section className="flex items-center gap-5 rounded-4xl bg-amber p-7 text-ink">
+        <motion.section {...appearItem} className="flex items-center gap-5 rounded-4xl bg-amber p-7 text-ink">
           <span className="grid h-16 w-16 shrink-0 place-items-center rounded-full bg-ink">
             <Mark size={40} />
           </span>
@@ -217,8 +219,8 @@ export function SettingsPage() {
           >
             версия {version ?? "—"}
           </span>
-        </section>
-      </div>
+        </motion.section>
+      </motion.div>
     </div>
   );
 }
