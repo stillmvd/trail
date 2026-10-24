@@ -1,6 +1,7 @@
 import { motion } from "motion/react";
 import { ArrowUpRight, Check } from "lucide-react";
 import type { Reminder } from "@/db/queries/reminders";
+import { tooltip } from "@/components/ui/Tooltip";
 
 export function ReminderRow({
   reminder,
@@ -82,7 +83,7 @@ export function ReminderRow({
         <button
           type="button"
           aria-label="Открыть связанное событие"
-          title="Открыть связанное событие"
+          {...tooltip("Открыть связанное событие", "bottom")}
           onClick={() => onEventJump(reminder.event_id!)}
           className={`grid h-8 w-8 shrink-0 cursor-pointer place-items-center rounded-full opacity-0 transition-[opacity,color,background-color] duration-150 group-hover:opacity-100 ${
             onAccent

@@ -12,6 +12,7 @@ import type { Significance } from "@/lib/constants";
 import type { CategoryNode } from "@/db/queries/categories";
 import type { TimelineEvent } from "@/db/queries/events";
 import { useBack } from "@/lib/back";
+import { tooltip } from "@/components/ui/Tooltip";
 
 const MAX_RESULTS = 8;
 
@@ -111,7 +112,7 @@ export function SearchPanel({
               <button
                 type="button"
                 aria-label={filter.query ? "Очистить запрос" : "Закрыть"}
-                title={filter.query ? "Очистить запрос" : "Закрыть"}
+                {...tooltip(filter.query ? "Очистить запрос" : "Закрыть", "bottom")}
                 onClick={() => {
                   if (filter.query) {
                     onFilterChange({ ...filter, query: "" });

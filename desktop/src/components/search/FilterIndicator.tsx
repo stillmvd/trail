@@ -1,6 +1,7 @@
 import { AnimatePresence, motion } from "motion/react";
 import { ListFilter, X } from "lucide-react";
 import { isFilterActive, type EventFilter } from "@/lib/filter";
+import { tooltip } from "@/components/ui/Tooltip";
 
 const plural = (n: number) => {
   const mod10 = n % 10;
@@ -37,7 +38,7 @@ export function FilterIndicator({
           <button
             type="button"
             onClick={onOpen}
-            title="Открыть поиск"
+            {...tooltip("Открыть поиск", "bottom")}
             className="flex min-w-0 cursor-pointer items-center gap-2 pr-1 text-[13px] font-semibold active:scale-[0.96]"
           >
             <ListFilter size={14} strokeWidth={2} className="shrink-0" />
@@ -54,7 +55,7 @@ export function FilterIndicator({
             type="button"
             onClick={onClear}
             aria-label="Сбросить фильтр"
-            title="Сбросить фильтр"
+            {...tooltip("Сбросить фильтр", "bottom")}
             className="grid h-7 w-7 shrink-0 cursor-pointer place-items-center rounded-full transition-[background-color,scale] duration-150 ease-[var(--rg-ease)] active:scale-[0.96]"
             style={{ background: "color-mix(in srgb, var(--ds-on-accent) 12%, transparent)" }}
           >

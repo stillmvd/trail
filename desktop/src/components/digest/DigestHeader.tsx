@@ -4,6 +4,7 @@ import { ru } from "date-fns/locale";
 import { Archive, Check, MoreHorizontal, RefreshCw, Search, Settings, Star } from "lucide-react";
 import { ContextMenu } from "@/components/ui/ContextMenu";
 import { pluralRu } from "@/lib/duration";
+import { tooltip } from "@/components/ui/Tooltip";
 
 const ROUND =
   "grid h-10 w-10 shrink-0 cursor-pointer place-items-center rounded-full bg-surface-2 transition-[background-color,color,scale] duration-150 ease-[var(--rg-ease)] hover:bg-surface-3 active:scale-[0.96]";
@@ -13,7 +14,7 @@ function Progress({ read, total }: { read: number; total: number }) {
   const left = total - read;
   return (
     <span
-      title={left ? `Осталось ${left}` : "Всё прочитано"}
+      {...tooltip(left ? `Осталось ${left}` : "Всё прочитано", "bottom")}
       className="inline-flex h-10 shrink-0 items-center gap-2 rounded-full pr-[18px] pl-2.5 text-sm font-semibold whitespace-nowrap text-app-text tabular-nums shadow-[inset_0_0_0_1px_var(--rg-line)]"
     >
       <span
@@ -120,21 +121,21 @@ export function DigestHeader({
         <button
           type="button"
           aria-label="Сохранённое"
-          title="Сохранённое"
+          {...tooltip("Сохранённое", "bottom")}
           aria-pressed={saved !== null}
           onClick={onToggleSaved}
           className={`${ROUND} ${saved ? "text-accent-ink" : "text-app-text"}`}
         >
           <Star size={18} strokeWidth={1.75} fill={saved ? "currentColor" : "none"} />
         </button>
-        <button type="button" aria-label="Прошлые сводки" title="Прошлые сводки" onClick={onArchive} className={`${ROUND} text-app-text`}>
+        <button type="button" aria-label="Прошлые сводки" {...tooltip("Прошлые сводки", "bottom")} onClick={onArchive} className={`${ROUND} text-app-text`}>
           <Archive size={18} strokeWidth={1.75} />
         </button>
         {!saved && (
           <button
             type="button"
             aria-label="Ещё"
-            title="Ещё"
+            {...tooltip("Ещё", "bottom")}
             onMouseDown={(e) => menu && e.stopPropagation()}
             onClick={(e) => {
               const r = e.currentTarget.getBoundingClientRect();

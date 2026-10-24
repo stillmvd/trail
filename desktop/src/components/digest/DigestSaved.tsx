@@ -4,6 +4,7 @@ import { Star } from "lucide-react";
 import { openArticle } from "@/lib/digest/open";
 import type { SavedItem } from "./DigestProvider";
 import { DigestEmpty } from "./DigestEmpty";
+import { tooltip } from "@/components/ui/Tooltip";
 
 export function DigestSaved({ items, onUnsave }: { items: SavedItem[]; onUnsave: (itemId: number) => void }) {
   if (items.length === 0) {
@@ -34,7 +35,7 @@ export function DigestSaved({ items, onUnsave }: { items: SavedItem[]; onUnsave:
             <button
               type="button"
               aria-label="Убрать из сохранённого"
-              title="Убрать из сохранённого"
+              {...tooltip("Убрать из сохранённого", "bottom")}
               onClick={() => onUnsave(item.id)}
               className="ml-auto grid h-[30px] w-[30px] cursor-pointer place-items-center rounded-full bg-surface-2 text-accent-ink transition-[scale] duration-150 ease-[var(--rg-ease)] active:scale-[0.96]"
             >

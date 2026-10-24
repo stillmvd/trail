@@ -5,6 +5,7 @@ import { Check, Star, ThumbsDown, ThumbsUp } from "lucide-react";
 import { CoverPlaceholder } from "@/components/ui/CoverPlaceholder";
 import { previewSrc } from "@/lib/paths";
 import type { DigestEntry } from "@/db/queries/digests";
+import { tooltip } from "@/components/ui/Tooltip";
 
 export function formatPublished(iso: string | null): string | null {
   if (!iso) return null;
@@ -28,7 +29,7 @@ function ActButton({
     <button
       type="button"
       aria-label={label}
-      title={label}
+      {...tooltip(label, "bottom")}
       onClick={onClick}
       className={`grid h-8 w-8 shrink-0 cursor-pointer place-items-center rounded-full transition-[background-color,color,scale] duration-150 ease-[var(--rg-ease)] active:scale-[0.96] ${className}`}
     >

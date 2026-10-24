@@ -5,6 +5,7 @@ import { DigestSourceManager } from "@/components/settings/DigestSourceManager";
 import { digestScreenStore, digestSettingsTabStore, type DigestSettingsTab } from "@/lib/digest/stores";
 import { useDigest } from "./DigestProvider";
 import { useBack } from "@/lib/back";
+import { tooltip } from "@/components/ui/Tooltip";
 
 const TABS: { value: DigestSettingsTab; label: string }[] = [
   { value: "pick", label: "Отбор" },
@@ -26,7 +27,7 @@ export function DigestSettings() {
           <button
             type="button"
             aria-label="К сводке"
-            title="К сводке"
+            {...tooltip("К сводке", "bottom")}
             onClick={() => digestScreenStore.set("feed")}
             className="grid h-10 w-10 shrink-0 cursor-pointer place-items-center rounded-full bg-surface-2 text-app-text transition-[background-color,scale] duration-150 ease-[var(--rg-ease)] hover:bg-surface-3 active:scale-[0.96]"
           >

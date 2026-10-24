@@ -10,6 +10,7 @@ import {
   Settings,
   type LucideIcon,
 } from "lucide-react";
+import { tooltip } from "@/components/ui/Tooltip";
 import { modeStore, type ViewMode } from "../../lib/mode";
 import { searchOpenStore } from "../../lib/search";
 import { digestUnseenStore, showDigestFeed } from "../../lib/digest/stores";
@@ -42,7 +43,7 @@ function RailButton({
       type="button"
       onClick={onClick}
       aria-label={label}
-      title={label}
+      {...tooltip(label)}
       aria-current={active ? "page" : undefined}
       className={`relative flex h-11 w-11 cursor-pointer items-center justify-center rounded-full transition-[background-color,color,scale] duration-150 ease-[var(--rg-ease)] active:scale-[0.96] ${
         active

@@ -7,6 +7,7 @@ import { EventsProvider } from "./components/events/EventsProvider";
 import { PeopleProvider } from "./components/events/PeopleProvider";
 import { RemindersProvider } from "./components/events/RemindersProvider";
 import { SearchHost } from "./components/search/SearchHost";
+import { TooltipHost } from "./components/ui/Tooltip";
 import { UpdateToast } from "@stillmvd/tauri-ship";
 import { modeStore, type ViewMode } from "./lib/mode";
 import { useApplyTheme } from "./lib/theme";
@@ -65,6 +66,7 @@ export default function App() {
                 </div>
               </div>
               <SearchHost />
+              <TooltipHost />
               <UpdateToast lang="ru" />
               {Agentation && (
                 <Suspense>

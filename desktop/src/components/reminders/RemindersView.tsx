@@ -27,6 +27,7 @@ import { QuickAdd } from "./QuickAdd";
 import { ReminderRow } from "./ReminderRow";
 import type { Reminder } from "@/db/queries/reminders";
 import type { Person } from "@/db/queries/people";
+import { tooltip } from "@/components/ui/Tooltip";
 
 const CARD = "rounded-4xl bg-surface-1 p-7 shadow-sm";
 
@@ -54,7 +55,7 @@ function RoundArrow({ label, onAccent }: { label: string; onAccent?: boolean }) 
     <button
       type="button"
       aria-label={label}
-      title={label}
+      {...tooltip(label, "bottom")}
       onClick={() => modeStore.set("calendar")}
       className={`absolute right-6 top-6 grid h-11 w-11 cursor-pointer place-items-center rounded-full transition-[background-color,filter,scale] duration-150 ease-[var(--rg-ease)] active:scale-[0.96] ${
         onAccent

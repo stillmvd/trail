@@ -7,6 +7,7 @@ import { pluralRu } from "@/lib/duration";
 import { saveDigestConfig, type DigestConfig } from "@/lib/digest/config";
 import { bumpDigestVersion, DEFAULT_DIGEST_MODEL, digestModelStore, notifyDigestStore } from "@/lib/digest/stores";
 import { DigestBansPanel } from "./DigestBansPanel";
+import { tooltip } from "@/components/ui/Tooltip";
 
 const FAINT = "text-[var(--ds-text-faint)]";
 const DAYS: [string, string, string] = ["день", "дня", "дней"];
@@ -168,7 +169,7 @@ function KeyRow() {
         <button
           type="button"
           aria-label={shown ? "Скрыть ключ" : "Показать ключ"}
-          title={shown ? "Скрыть ключ" : "Показать ключ"}
+          {...tooltip(shown ? "Скрыть ключ" : "Показать ключ", "bottom")}
           onClick={() => setShown((v) => !v)}
           className="grid h-8 w-8 shrink-0 cursor-pointer place-items-center rounded-full bg-surface-2 text-muted transition-[background-color,color,scale] duration-150 ease-[var(--rg-ease)] hover:text-app-text active:scale-[0.96]"
         >

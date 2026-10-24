@@ -3,6 +3,7 @@ import { UpdateBadge } from "@stillmvd/tauri-ship";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { Copy, Minus, Square, X } from "lucide-react";
 import { Mark } from "./brand/Mark";
+import { tooltip } from "./ui/Tooltip";
 
 const win = getCurrentWindow();
 
@@ -46,12 +47,19 @@ export function Titlebar() {
         <UpdateBadge lang="ru" />
       </span>
       <div className="flex items-center gap-1">
-        <button type="button" aria-label="Свернуть" onClick={() => win.minimize()} className={BTN}>
+        <button
+          type="button"
+          aria-label="Свернуть"
+          {...tooltip("Свернуть", "bottom")}
+          onClick={() => win.minimize()}
+          className={BTN}
+        >
           <Minus size={16} strokeWidth={1.25} />
         </button>
         <button
           type="button"
           aria-label={isMax ? "Восстановить" : "Развернуть"}
+          {...tooltip(isMax ? "Восстановить" : "Развернуть", "bottom")}
           onClick={() => win.toggleMaximize()}
           className={BTN}
         >
@@ -60,6 +68,7 @@ export function Titlebar() {
         <button
           type="button"
           aria-label="Закрыть"
+          {...tooltip("Закрыть", "bottom")}
           onClick={() => win.close()}
           className={`${BASE} hover:bg-[color-mix(in_srgb,var(--ds-danger)_14%,transparent)] hover:text-rust`}
         >
