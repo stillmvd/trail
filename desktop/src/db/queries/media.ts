@@ -29,6 +29,34 @@ export async function addMedia(eventId: number, relPath: string): Promise<number
   return Number(res.lastInsertId);
 }
 
+export type MediaRef = { kind: "event" | "person"; id: number; path: string };
+
+export async function listAllMediaRefs(): Promise<MediaRef[]> {
+  const db = await getDb();
+  const events = await db.select<{ id: number; path: string }[]>("SELECT id, path FROM event_media");
+  const people = await db.select<{ id: number; path: string }[]>(
+    "SELECT id, photo AS path FROM people WHERE photo IS NOT NULL AND photo <> ''",
+  );
+  return [
+    ...events.map((r) => ({ kind: "event" as const, ...r })),
+    ...people.map((r) => ({ kind: "person" as const, ...r })),
+  ];
+}
+
+export async function replaceMediaPath(ref: MediaRef, next: string): Promise<boolean> {
+  const db = await getDb();
+  const res =
+    ref.kind === "event"
+      ? await db.execute("UPDATE event_media SET path = ? WHERE id = ? AND path = ?", [next, ref.id, ref.path])
+      : await db.execute("UPDATE people SET photo = ? WHERE id = ? AND photo = ?", [next, ref.id, ref.path]);
+  return res.rowsAffected > 0;
+}
+
+export async function snapshotDatabase(dest: string): Promise<void> {
+  const db = await getDb();
+  await db.execute(`VACUUM INTO '${dest.replace(/'/g, "''")}'`);
+}
+
 export async function deleteMedia(id: number): Promise<string | null> {
   const db = await getDb();
   const rows = await db.select<{ path: string }[]>(

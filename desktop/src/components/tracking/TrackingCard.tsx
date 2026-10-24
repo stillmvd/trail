@@ -13,11 +13,11 @@ import { SpanHero, TrackingTiles } from "./TrackingParts";
 import { eventAccent } from "@/lib/accent";
 import { resolveIconOrNull } from "@/lib/icons";
 import { getSignificanceMeta } from "@/lib/significance";
-import { mediaSrc } from "@/lib/paths";
 import { SignificanceIcon } from "@/components/ui/SignificanceIcon";
 import { CoverPlaceholder } from "@/components/ui/CoverPlaceholder";
 import type { TimelineEvent } from "@/db/queries/events";
 import type { Significance } from "@/lib/constants";
+import { MediaImg } from "@/components/ui/MediaImg";
 
 const ELEVATION_1 = "var(--ds-shadow-1)";
 const ELEVATION_2 = "var(--ds-shadow-2)";
@@ -71,13 +71,7 @@ export function TrackingCard({
 
       <div className="relative aspect-video w-full overflow-hidden rounded-b-4xl">
         {event.cover ? (
-          <img
-            src={mediaSrc(event.cover)}
-            alt=""
-            loading="lazy"
-            decoding="async"
-            className="h-full w-full object-cover"
-          />
+          <MediaImg path={event.cover} className="h-full w-full object-cover" />
         ) : (
           <CoverPlaceholder fill={accent.fill} icon={event.category_icon} onAccent={highlight} />
         )}

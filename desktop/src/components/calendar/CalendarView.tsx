@@ -17,7 +17,6 @@ import "react-day-picker/style.css";
 import { onColorFor } from "@/lib/colors";
 import { eventAccent } from "@/lib/accent";
 import { resolveIconOrNull } from "@/lib/icons";
-import { mediaSrc } from "@/lib/paths";
 import {
   EMPTY_FILTER,
   isFilterActive,
@@ -33,6 +32,7 @@ import type { TimelineEvent } from "@/db/queries/events";
 import type { Mark } from "@/db/queries/marks";
 import { WheelField } from "@/components/ui/WheelField";
 import type { Person } from "@/db/queries/people";
+import { MediaImg } from "@/components/ui/MediaImg";
 
 type Anchor = { x: number; y: number };
 
@@ -163,13 +163,7 @@ const CalendarContext = createContext<CalCtx>({
 function EventMarker({ event }: { event: TimelineEvent }) {
   if (!event.cover) return null;
   return (
-    <img
-      src={mediaSrc(event.cover)}
-      alt=""
-      loading="lazy"
-      decoding="async"
-      className="tl-cal-chip-thumb"
-    />
+    <MediaImg path={event.cover} className="tl-cal-chip-thumb" />
   );
 }
 

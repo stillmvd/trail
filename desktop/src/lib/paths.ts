@@ -10,9 +10,16 @@ export async function initPaths(): Promise<void> {
   previewDir = await join(base, "digest-cache");
 }
 
+export const thumbName = (relPath: string) => `${relPath.replace(/\.[^.]+$/, "")}.webp`;
+
 export function mediaSrc(relPath: string): string {
   if (!mediaDir) return "";
   return convertFileSrc(`${mediaDir}\\${relPath}`);
+}
+
+export function thumbSrc(relPath: string): string {
+  if (!mediaDir) return "";
+  return convertFileSrc(`${mediaDir}\\thumbs\\${thumbName(relPath)}`);
 }
 
 export function previewSrc(name: string): string {

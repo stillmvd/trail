@@ -1,7 +1,7 @@
 import { AnimatePresence, motion } from "motion/react";
 import { formatFullRu, formatDayMonthRu } from "@/lib/dates";
-import { mediaSrc } from "@/lib/paths";
 import type { TimelineEvent } from "@/db/queries/events";
+import { MediaImg } from "@/components/ui/MediaImg";
 
 const TOOLTIP_HALF_PX = 196;
 
@@ -29,11 +29,7 @@ export function EventTooltip({ anchor, width }: { anchor: TooltipAnchor | null; 
           {anchor.events.length === 1 ? (
             <>
               {anchor.events[0].cover && (
-                <img
-                  src={mediaSrc(anchor.events[0].cover)}
-                  alt=""
-                  className="img-outline mb-2 h-24 w-full rounded-2xl object-cover"
-                />
+                <MediaImg path={anchor.events[0].cover} className="img-outline mb-2 h-24 w-full rounded-2xl object-cover" />
               )}
               <div className="text-[13px] font-semibold text-app-text">{anchor.events[0].title}</div>
               <div className="text-xs text-muted">

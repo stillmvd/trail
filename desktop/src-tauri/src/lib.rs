@@ -1,16 +1,111 @@
 use std::fs;
 use tauri::Manager;
 
-#[tauri::command]
-fn save_media(app: tauri::AppHandle, name: String, data: Vec<u8>) -> Result<String, String> {
-    let dir = app
+fn media_dir(app: &tauri::AppHandle) -> Result<std::path::PathBuf, String> {
+    Ok(app
         .path()
         .app_data_dir()
         .map_err(|e| e.to_string())?
-        .join("media");
+        .join("media"))
+}
+
+fn safe_name(name: &str) -> Result<&str, String> {
+    if name.is_empty() || name.contains(['/', '\\', ':']) || name.contains("..") {
+        return Err("Недопустимое имя файла".into());
+    }
+    Ok(name)
+}
+
+fn thumb_name(name: &str) -> String {
+    let stem = std::path::Path::new(name)
+        .file_stem()
+        .map_or(name.into(), |s| s.to_string_lossy().to_string());
+    format!("{stem}.webp")
+}
+
+fn raw_upload<'a>(request: &'a tauri::ipc::Request<'_>) -> Result<(String, &'a [u8]), String> {
+    let tauri::ipc::InvokeBody::Raw(data) = request.body() else {
+        return Err("Ожидались сырые байты".into());
+    };
+    let name = request
+        .headers()
+        .get("name")
+        .and_then(|v| v.to_str().ok())
+        .ok_or("Нет имени файла")?;
+    Ok((safe_name(name)?.to_string(), data))
+}
+
+#[tauri::command]
+fn save_media(app: tauri::AppHandle, request: tauri::ipc::Request<'_>) -> Result<String, String> {
+    let (name, data) = raw_upload(&request)?;
+    let thumb = request.headers().get("thumb").is_some();
+    let mut dir = media_dir(&app)?;
+    if thumb {
+        dir = dir.join("thumbs");
+    }
     fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
     fs::write(dir.join(&name), data).map_err(|e| e.to_string())?;
     Ok(name)
+}
+
+#[tauri::command]
+fn list_media_thumbs(app: tauri::AppHandle) -> Result<Vec<String>, String> {
+    let Ok(entries) = fs::read_dir(media_dir(&app)?.join("thumbs")) else {
+        return Ok(Vec::new());
+    };
+    Ok(entries
+        .filter_map(|e| e.ok()?.file_name().into_string().ok())
+        .collect())
+}
+
+#[tauri::command]
+fn snapshot_media(app: tauri::AppHandle, names: Vec<String>) -> Result<String, String> {
+    let src = media_dir(&app)?;
+    let dest = app
+        .path()
+        .app_data_dir()
+        .map_err(|e| e.to_string())?
+        .join("media-before-webp");
+    fs::create_dir_all(&dest).map_err(|e| e.to_string())?;
+    for name in names {
+        let name = safe_name(&name)?;
+        let to = dest.join(name);
+        if !to.exists() && src.join(name).is_file() {
+            fs::copy(src.join(name), to).map_err(|e| e.to_string())?;
+        }
+    }
+    Ok(dest.to_string_lossy().to_string())
+}
+
+#[tauri::command]
+fn list_media_files(app: tauri::AppHandle) -> Result<Vec<(String, u64)>, String> {
+    let dir = media_dir(&app)?;
+    let now = std::time::SystemTime::now();
+    let mut out = Vec::new();
+    for sub in [dir.clone(), dir.join("thumbs")] {
+        let Ok(entries) = fs::read_dir(&sub) else { continue };
+        for entry in entries.flatten() {
+            let Ok(meta) = entry.metadata() else { continue };
+            if !meta.is_file() {
+                continue;
+            }
+            let age = meta
+                .modified()
+                .ok()
+                .and_then(|m| now.duration_since(m).ok())
+                .map_or(0, |d| d.as_secs());
+            let name = entry.file_name().to_string_lossy().to_string();
+            out.push((if sub == dir { name } else { format!("thumbs/{name}") }, age));
+        }
+    }
+    Ok(out)
+}
+
+#[tauri::command]
+fn delete_media_thumb(app: tauri::AppHandle, name: String) -> Result<(), String> {
+    let name = safe_name(&name)?;
+    let _ = fs::remove_file(media_dir(&app)?.join("thumbs").join(name));
+    Ok(())
 }
 
 fn digest_cache_dir(app: &tauri::AppHandle) -> Result<std::path::PathBuf, String> {
@@ -22,7 +117,8 @@ fn digest_cache_dir(app: &tauri::AppHandle) -> Result<std::path::PathBuf, String
 }
 
 #[tauri::command]
-fn save_digest_preview(app: tauri::AppHandle, name: String, data: Vec<u8>) -> Result<String, String> {
+fn save_digest_preview(app: tauri::AppHandle, request: tauri::ipc::Request<'_>) -> Result<String, String> {
+    let (name, data) = raw_upload(&request)?;
     let dir = digest_cache_dir(&app)?;
     fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
     fs::write(dir.join(&name), data).map_err(|e| e.to_string())?;
@@ -104,13 +200,10 @@ fn open_in_chrome(url: String) -> Result<(), String> {
 
 #[tauri::command]
 fn delete_media(app: tauri::AppHandle, name: String) -> Result<(), String> {
-    let path = app
-        .path()
-        .app_data_dir()
-        .map_err(|e| e.to_string())?
-        .join("media")
-        .join(&name);
-    let _ = fs::remove_file(path);
+    let name = safe_name(&name)?;
+    let dir = media_dir(&app)?;
+    let _ = fs::remove_file(dir.join(name));
+    let _ = fs::remove_file(dir.join("thumbs").join(thumb_name(name)));
     Ok(())
 }
 
@@ -525,6 +618,10 @@ pub fn run() {
             comfy_running,
             save_media,
             delete_media,
+            list_media_thumbs,
+            snapshot_media,
+            list_media_files,
+            delete_media_thumb,
             save_digest_preview,
             prune_digest_previews,
             list_digest_previews,

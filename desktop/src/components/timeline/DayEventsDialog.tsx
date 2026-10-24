@@ -6,7 +6,6 @@ import { formatFullRu, formatDayMonthRu } from "@/lib/dates";
 import { getSignificanceMeta } from "@/lib/significance";
 import { eventAccent } from "@/lib/accent";
 import { resolveIconOrNull } from "@/lib/icons";
-import { mediaSrc } from "@/lib/paths";
 import { Button } from "@/components/ui/Button";
 import { MetricChip } from "@/components/ui/MetricChip";
 import { SignificanceIcon } from "@/components/ui/SignificanceIcon";
@@ -16,6 +15,7 @@ import type { TimelineEvent } from "@/db/queries/events";
 import type { Mark } from "@/db/queries/marks";
 import type { Significance } from "@/lib/constants";
 import { useBack } from "@/lib/back";
+import { MediaImg } from "@/components/ui/MediaImg";
 
 interface DayEventsDialogProps {
   open: boolean;
@@ -203,13 +203,7 @@ function EventRow({
       className="group flex cursor-pointer items-center gap-3.5 rounded-3xl p-2.5 text-left transition-colors hover:bg-surface-2"
     >
       {event.cover ? (
-        <img
-          src={mediaSrc(event.cover)}
-          alt=""
-          loading="lazy"
-          decoding="async"
-          className="img-outline h-16 w-16 shrink-0 rounded-2xl object-cover"
-        />
+        <MediaImg path={event.cover} className="img-outline h-16 w-16 shrink-0 rounded-2xl object-cover" />
       ) : (
         <span className="relative block h-16 w-16 shrink-0 overflow-hidden rounded-2xl">
           <CoverPlaceholder fill={accent.fill} icon={event.category_icon} />

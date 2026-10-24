@@ -8,6 +8,7 @@ import { PeopleProvider } from "./components/events/PeopleProvider";
 import { RemindersProvider } from "./components/events/RemindersProvider";
 import { SearchHost } from "./components/search/SearchHost";
 import { TooltipHost } from "./components/ui/Tooltip";
+import { MediaOptimizer } from "./components/MediaOptimizer";
 import { UpdateToast } from "@stillmvd/tauri-ship";
 import { modeStore, type ViewMode } from "./lib/mode";
 import { useApplyTheme } from "./lib/theme";
@@ -16,6 +17,7 @@ import { useCloseToTray } from "./lib/behavior";
 import { useNotifications } from "./lib/notifications";
 import { useAutoBackup } from "./lib/backup";
 import { useDigestScheduler } from "./lib/digest/scheduler";
+import { usePrefetchPages } from "./lib/prefetch";
 import { SettingsPage } from "./pages/SettingsPage";
 import { GalleryPage } from "./pages/GalleryPage";
 import { CalendarPage } from "./pages/CalendarPage";
@@ -46,6 +48,7 @@ export default function App() {
   useNotifications();
   useAutoBackup();
   useDigestScheduler();
+  usePrefetchPages();
   const mode = modeStore.use();
   useBackButton(mode);
   const Page = PAGES[mode];
@@ -67,6 +70,7 @@ export default function App() {
               </div>
               <SearchHost />
               <TooltipHost />
+              <MediaOptimizer />
               <UpdateToast lang="ru" />
               {Agentation && (
                 <Suspense>

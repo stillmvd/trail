@@ -1,8 +1,8 @@
 import { ArrowUpRight } from "lucide-react";
 import { formatFullRu, formatDayMonthRu } from "@/lib/dates";
-import { mediaSrc } from "@/lib/paths";
 import type { Person } from "@/db/queries/people";
 import { AgeHero, BirthdayTiles, PersonPlaceholder } from "./BirthdayParts";
+import { MediaImg } from "@/components/ui/MediaImg";
 
 const ELEVATION_1 = "var(--ds-shadow-1)";
 const ELEVATION_2 = "var(--ds-shadow-2)";
@@ -38,13 +38,7 @@ export function BirthdayCard({
 
       <div className="relative aspect-[4/3.4] w-full overflow-hidden">
         {person.photo ? (
-          <img
-            src={mediaSrc(person.photo)}
-            alt=""
-            loading="lazy"
-            decoding="async"
-            className="h-full w-full object-cover"
-          />
+          <MediaImg path={person.photo} className="h-full w-full object-cover" />
         ) : (
           <PersonPlaceholder />
         )}

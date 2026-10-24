@@ -1,11 +1,11 @@
 import { Pencil, Trash2 } from "lucide-react";
 import { formatFullRu, formatDayMonthRu } from "@/lib/dates";
-import { mediaSrc } from "@/lib/paths";
 import { Button } from "@/components/ui/Button";
 import { SideSheet } from "@/components/ui/SideSheet";
 import { PersonForm, type PersonFormPayload } from "./PersonForm";
 import { AgeHero, BirthdayTiles, PersonPlaceholder } from "./BirthdayParts";
 import type { Person } from "@/db/queries/people";
+import { MediaImg } from "@/components/ui/MediaImg";
 
 const cap = (s: string) => (s ? s[0].toUpperCase() + s.slice(1) : s);
 
@@ -75,7 +75,7 @@ function PersonView({ person }: { person: Person }) {
     <div className="flex flex-col gap-4">
       <div className="aspect-video w-full overflow-hidden rounded-3xl">
         {person.photo ? (
-          <img src={mediaSrc(person.photo)} alt="" decoding="async" className="h-full w-full object-cover" />
+          <MediaImg path={person.photo} full className="h-full w-full object-cover" />
         ) : (
           <PersonPlaceholder />
         )}

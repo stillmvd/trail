@@ -1,6 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import { setPreview } from "@/db/queries/digestItems";
 import { settleLimited } from "./limit";
+import { encodeImage } from "@/lib/media";
 import { download, pageText } from "./sources";
 
 const PAGE_TIMEOUT_MS = 8_000;
@@ -42,9 +43,17 @@ async function fetchPreview(target: PreviewTarget): Promise<Outcome> {
   const { bytes, type } = await download(imageUrl, IMAGE_TIMEOUT_MS);
   const ext = EXT[type.split(";")[0].trim().toLowerCase()];
   if (!ext || bytes.length === 0 || bytes.length > MAX_BYTES) return "bad-image";
-  const name = await invoke<string>("save_digest_preview", {
-    name: `${target.id}.${ext}`,
-    data: Array.from(bytes),
+  let data: Blob = new Blob([bytes], { type });
+  let fileExt = ext;
+  if (ext !== "gif") {
+    const r = await encodeImage(data, true);
+    if (!r.error && r.thumb && r.thumb.size < data.size) {
+      data = r.thumb;
+      fileExt = "webp";
+    }
+  }
+  const name = await invoke<string>("save_digest_preview", new Uint8Array(await data.arrayBuffer()), {
+    headers: { name: `${target.id}.${fileExt}` },
   });
   await setPreview(target.id, name);
   return "saved";

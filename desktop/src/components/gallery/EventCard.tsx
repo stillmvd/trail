@@ -4,9 +4,9 @@ import { formatFullRu, formatDayMonthRu } from "@/lib/dates";
 import { eventAccent } from "@/lib/accent";
 import { resolveIconOrNull } from "@/lib/icons";
 import { isFuture } from "@/lib/duration";
-import { mediaSrc } from "@/lib/paths";
 import { CoverPlaceholder } from "@/components/ui/CoverPlaceholder";
 import type { TimelineEvent } from "@/db/queries/events";
+import { MediaImg } from "@/components/ui/MediaImg";
 
 const ELEVATION_1 = "var(--ds-shadow-1)";
 const ELEVATION_2 = "var(--ds-shadow-2)";
@@ -45,11 +45,8 @@ export function EventCard({
 
       <div className="relative aspect-[4/3] w-full overflow-hidden">
         {event.cover ? (
-          <img
-            src={mediaSrc(event.cover)}
-            alt=""
-            loading="lazy"
-            decoding="async"
+          <MediaImg
+            path={event.cover}
             className="h-full w-full object-cover"
             style={{ opacity: future ? 0.6 : undefined }}
           />
