@@ -12,20 +12,17 @@ function Progress({ read, total }: { read: number; total: number }) {
   const p = total ? Math.round((read / total) * 100) : 0;
   const left = total - read;
   return (
-    <span className="inline-flex items-center gap-2.5">
+    <span
+      title={left ? `Осталось ${left}` : "Всё прочитано"}
+      className="inline-flex h-10 shrink-0 items-center gap-2 rounded-full pr-[18px] pl-2.5 text-sm font-semibold whitespace-nowrap text-app-text tabular-nums shadow-[inset_0_0_0_1px_var(--rg-line)]"
+    >
       <span
-        className="relative grid h-[38px] w-[38px] shrink-0 place-items-center rounded-full"
-        style={{ background: `conic-gradient(var(--ds-accent) ${p}%, var(--ds-surface-2) 0)` }}
+        className="relative h-5 w-5 shrink-0 rounded-full"
+        style={{ background: `conic-gradient(var(--ds-accent) ${p}%, var(--ds-surface-3) 0)` }}
       >
-        <span className="absolute inset-1 rounded-full bg-surface-0" />
-        <span className="relative text-[11px] font-bold text-app-text tabular-nums">{p}%</span>
+        <span className="absolute inset-[3px] rounded-full bg-surface-0" />
       </span>
-      <span className="flex flex-col leading-[1.2]">
-        <b className="text-[13px] font-bold tabular-nums">
-          {read} из {total}
-        </b>
-        <span className="text-xs text-[var(--ds-text-faint)]">{left ? `осталось ${left}` : "всё прочитано"}</span>
-      </span>
+      {read} из {total}
     </span>
   );
 }
@@ -83,9 +80,27 @@ export function DigestHeader({
         )}
       </div>
       <span className="min-w-2 flex-1" />
-      {progress && !saved && <Progress read={progress.read} total={progress.total} />}
 
       <div className="ml-auto flex min-w-0 shrink-0 items-center gap-2">
+        {progress && !saved && <Progress read={progress.read} total={progress.total} />}
+        {!saved &&
+          viewed !== null &&
+          (viewed ? (
+            <span className="inline-flex h-10 items-center gap-2 rounded-full px-[18px] text-sm font-semibold whitespace-nowrap text-muted shadow-[inset_0_0_0_1px_var(--rg-line)]">
+              <Check size={18} strokeWidth={1.75} />
+              Просмотрена
+            </span>
+          ) : (
+            <button
+              type="button"
+              onClick={() => onMarkViewed?.()}
+              className="inline-flex h-10 cursor-pointer items-center gap-2 rounded-full bg-amber px-[18px] text-sm font-bold whitespace-nowrap text-ink transition-[scale] duration-150 ease-[var(--rg-ease)] active:scale-[0.96]"
+            >
+              <Check size={18} strokeWidth={1.75} />
+              Просмотрено
+            </button>
+          ))}
+        {!saved && (progress || viewed !== null) && <span className="mx-2 h-6 w-px shrink-0 bg-line" />}
         <label className="flex h-10 min-w-[150px] flex-[0_1_240px] items-center gap-2.5 rounded-full bg-surface-2 px-4">
           <Search size={16} strokeWidth={1.75} className="shrink-0 text-[var(--ds-text-faint)]" />
           <input
@@ -115,23 +130,6 @@ export function DigestHeader({
         <button type="button" aria-label="Прошлые сводки" title="Прошлые сводки" onClick={onArchive} className={`${ROUND} text-app-text`}>
           <Archive size={18} strokeWidth={1.75} />
         </button>
-        {!saved &&
-          viewed !== null &&
-          (viewed ? (
-            <span className="inline-flex h-10 items-center gap-2 rounded-full px-[18px] text-sm font-semibold whitespace-nowrap text-muted shadow-[inset_0_0_0_1px_var(--rg-line)]">
-              <Check size={18} strokeWidth={1.75} />
-              Просмотрена
-            </span>
-          ) : (
-            <button
-              type="button"
-              onClick={() => onMarkViewed?.()}
-              className="inline-flex h-10 cursor-pointer items-center gap-2 rounded-full bg-amber px-[18px] text-sm font-bold whitespace-nowrap text-ink transition-[scale] duration-150 ease-[var(--rg-ease)] active:scale-[0.96]"
-            >
-              <Check size={18} strokeWidth={1.75} />
-              Просмотрено
-            </button>
-          ))}
         {!saved && (
           <button
             type="button"
