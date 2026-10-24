@@ -10,6 +10,8 @@ import { ensureSeeded } from "@/lib/digest/seed";
 import { bumpDigestVersion, digestRunStore, digestVersionStore, type DigestRun } from "@/lib/digest/stores";
 import {
   allMainOpened,
+  clearDigestViewed,
+  clearEntryOpened,
   listDigests,
   listEntries,
   markDigestViewed,
@@ -46,6 +48,7 @@ type DigestCtx = {
   selectDigest: (id: number) => void;
   openEntry: (entry: DigestEntry) => Promise<void>;
   react: (entry: DigestEntry, value: 1 | -1) => Promise<void>;
+  toggleSeen: (entry: DigestEntry) => Promise<void>;
   toggleStar: (itemId: number) => Promise<void>;
   ban: (domain: string) => Promise<void>;
   markViewed: () => Promise<void>;
@@ -120,9 +123,23 @@ export function DigestProvider({ children }: { children: ReactNode }) {
   const react = async (entry: DigestEntry, value: 1 | -1) => {
     const next = entry.reaction === value ? null : value;
     await setReaction(entry.item_id, next);
-    if (next === -1) {
+    if (next !== null) {
       await markEntryOpened(entry.digest_id, entry.item_id);
       await viewIfDone(entry.digest_id);
+    }
+    bumpDigestVersion();
+  };
+
+  const toggleSeen = async (entry: DigestEntry) => {
+    if (entry.opened_at === null) {
+      await markEntryOpened(entry.digest_id, entry.item_id);
+      await viewIfDone(entry.digest_id);
+    } else {
+      await clearEntryOpened(entry.digest_id, entry.item_id);
+      if (!(await allMainOpened(entry.digest_id))) {
+        await clearDigestViewed(entry.digest_id);
+        await refreshUnseen();
+      }
     }
     bumpDigestVersion();
   };
@@ -163,6 +180,7 @@ export function DigestProvider({ children }: { children: ReactNode }) {
         selectDigest: setSelectedId,
         openEntry,
         react,
+        toggleSeen,
         toggleStar,
         ban,
         markViewed,

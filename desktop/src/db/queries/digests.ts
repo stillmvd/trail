@@ -154,6 +154,14 @@ export async function markEntryOpened(digestId: number, itemId: number): Promise
   );
 }
 
+export async function clearEntryOpened(digestId: number, itemId: number): Promise<void> {
+  const db = await getDb();
+  await db.execute(`UPDATE digest_entries SET opened_at = NULL WHERE digest_id = ? AND item_id = ?`, [
+    digestId,
+    itemId,
+  ]);
+}
+
 export async function markMainOpened(digestId: number): Promise<void> {
   const db = await getDb();
   await db.execute(
@@ -188,4 +196,9 @@ export async function markDigestViewed(id: number): Promise<void> {
     new Date().toISOString(),
     id,
   ]);
+}
+
+export async function clearDigestViewed(id: number): Promise<void> {
+  const db = await getDb();
+  await db.execute(`UPDATE digests SET viewed_at = NULL WHERE id = ?`, [id]);
 }

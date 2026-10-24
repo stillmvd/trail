@@ -62,6 +62,7 @@ export function DigestView() {
     selectDigest,
     openEntry,
     react,
+    toggleSeen,
     toggleStar,
     ban,
     markViewed,
@@ -110,6 +111,7 @@ export function DigestView() {
   const selectedId = useDigestKeys(q || savedView || archiveOpen ? [] : main, {
     open: openEntry,
     react,
+    seen: toggleSeen,
     star: (entry) => toggleStar(entry.item_id),
     search: () => searchRef.current?.focus(),
   });
@@ -183,6 +185,7 @@ export function DigestView() {
                       banned={bannedDomains.has(entry.domain)}
                       onOpen={() => openEntry(entry)}
                       onReact={(value) => react(entry, value)}
+                      onSeen={() => toggleSeen(entry)}
                       onStar={() => toggleStar(entry.item_id)}
                       onMenu={(e) => openMenu(e, entry)}
                     />

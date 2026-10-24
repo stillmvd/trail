@@ -1,7 +1,7 @@
 import { useState, type MouseEvent, type ReactNode } from "react";
 import { format } from "date-fns";
 import { ru } from "date-fns/locale";
-import { Star, ThumbsDown, ThumbsUp } from "lucide-react";
+import { Check, Star, ThumbsDown, ThumbsUp } from "lucide-react";
 import { CoverPlaceholder } from "@/components/ui/CoverPlaceholder";
 import { previewSrc } from "@/lib/paths";
 import type { DigestEntry } from "@/db/queries/digests";
@@ -46,6 +46,7 @@ export function DigestCard({
   banned,
   onOpen,
   onReact,
+  onSeen,
   onStar,
   onMenu,
 }: {
@@ -54,6 +55,7 @@ export function DigestCard({
   banned: boolean;
   onOpen: () => void;
   onReact: (value: 1 | -1) => void;
+  onSeen: () => void;
   onStar: () => void;
   onMenu: (e: MouseEvent) => void;
 }) {
@@ -110,6 +112,13 @@ export function DigestCard({
           <ThumbsDown size={16} strokeWidth={1.75} />
         </ActButton>
         <span className="flex-1" />
+        <ActButton
+          label={seen ? "Снять отметку о просмотре" : "Отметить просмотренным"}
+          onClick={onSeen}
+          className={seen ? "bg-surface-2 text-accent-ink" : IDLE}
+        >
+          <Check size={16} strokeWidth={1.75} />
+        </ActButton>
         <ActButton
           label={entry.saved ? "Убрать из сохранённого" : "В сохранённое"}
           onClick={onStar}

@@ -4,6 +4,7 @@ import type { DigestEntry } from "@/db/queries/digests";
 type Actions = {
   open: (entry: DigestEntry) => void;
   react: (entry: DigestEntry, value: 1 | -1) => void;
+  seen: (entry: DigestEntry) => void;
   star: (entry: DigestEntry) => void;
   search: () => void;
 };
@@ -41,6 +42,7 @@ export function useDigestKeys(order: DigestEntry[], actions: Actions) {
       } else if (current && e.code === "Enter") actions.open(current);
       else if (current && e.code === "KeyL") actions.react(current, 1);
       else if (current && e.code === "KeyD") actions.react(current, -1);
+      else if (current && e.code === "KeyM") actions.seen(current);
       else if (current && e.code === "KeyS") actions.star(current);
       else return;
       e.preventDefault();
