@@ -18,7 +18,7 @@ const PROVIDER_SEGMENTS: { value: ImageProvider; label: string }[] = [
 
 const HINTS: Record<ImageProvider, string> = {
   comfyui:
-    "Локально на видеокарте, бесплатно, модель Z-Image Turbo. Trail сам запускает ComfyUI и выгружает модели после картинки; если не вышло — рисует в Cloudflare.",
+    "Локально на видеокарте, бесплатно, модель Z-Image Turbo. Trail сам запускает ComfyUI и выгружает модели, когда закрываешь окно генерации; если не вышло — рисует в Cloudflare.",
   cloudflare: "Workers AI, бесплатно до 10 000 нейронов в день. Токен с правом Workers AI.",
   openrouter: "FLUX.2 klein, около 1,5 цента за картинку.",
 };

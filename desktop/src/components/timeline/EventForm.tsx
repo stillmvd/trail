@@ -1,5 +1,5 @@
 import { createElement, useState } from "react";
-import { ImageIcon, LoaderCircle, Plus, Sparkles, Target } from "lucide-react";
+import { ImageIcon, Plus, Sparkles, Target } from "lucide-react";
 import type { CategoryNode } from "@/db/queries/categories";
 import type { EventMedia } from "@/db/queries/media";
 import { TIMELINE_MIN_DATE, TIMELINE_MAX_DATE, isValidISODate, type Significance } from "@/lib/constants";
@@ -10,10 +10,10 @@ import { SheetHeaderAction } from "@/components/ui/SideSheet";
 import { Button } from "@/components/ui/Button";
 import { FormGroup } from "@/components/ui/FormGroup";
 import { PhotoPicker, usePhotoState, type PhotoChange } from "@/components/ui/PhotoPicker";
-import { useToast } from "@/components/ui/Toast";
+import { tooltip } from "@/components/ui/Tooltip";
 import { resolveIconOrNull } from "@/lib/icons";
-import { generateEventImage } from "@/lib/imageGen";
 import { CategoryPicker } from "./CategoryPicker";
+import { ImageGenDialog } from "./ImageGenDialog";
 import { SignificancePicker } from "./SignificancePicker";
 
 export interface EventFormValues {
@@ -75,22 +75,11 @@ export function EventForm({
   const [endDateError, setEndDateError] = useState<string>();
 
   const photo = usePhotoState(initialMedia?.[0]?.path);
-  const [generating, setGenerating] = useState(false);
-  const { show } = useToast();
-
-  async function handleGenerate() {
-    setGenerating(true);
-    try {
-      photo.pick([await generateEventImage(title, description, (m) => show(m, "info"))]);
-    } catch (e) {
-      show(e instanceof Error ? e.message : String(e), "error");
-    } finally {
-      setGenerating(false);
-    }
-  }
+  const [generatorOpen, setGeneratorOpen] = useState(false);
 
   const selectedCategory = categories.find((c) => c.id === categoryId) ?? null;
   const selectedSub = selectedCategory?.children.find((c) => c.id === subcategoryId) ?? null;
+  const categoryLabel = [selectedCategory?.name, selectedSub?.name].filter(Boolean).join(" › ");
   const CategoryIcon = resolveIconOrNull(selectedSub?.icon ?? selectedCategory?.icon);
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -174,9 +163,7 @@ export function EventForm({
           onPick={photo.pick}
           onClear={photo.clear}
           placeholder={
-            generating ? (
-              <LoaderCircle size={44} strokeWidth={1.5} className="animate-spin" />
-            ) : CategoryIcon ? (
+            CategoryIcon ? (
               createElement(CategoryIcon, { size: 44, strokeWidth: 1.5 })
             ) : (
               <ImageIcon size={44} strokeWidth={1.5} />
@@ -194,26 +181,27 @@ export function EventForm({
           notePlaceholder="Детали (необязательно)"
           autoFocus
           action={
-            !photo.src &&
             title.trim() && (
               <button
                 type="button"
-                onClick={handleGenerate}
-                disabled={generating}
-                title="Сгенерировать картинку по названию и деталям"
+                onClick={() => setGeneratorOpen(true)}
                 aria-label="Сгенерировать картинку"
-                className="grid h-8 w-8 cursor-pointer place-items-center rounded-full bg-surface-3 text-muted transition-[background-color,color,scale] duration-150 ease-[var(--rg-ease)] hover:bg-amber hover:text-ink active:scale-[0.96] disabled:pointer-events-none disabled:opacity-40"
+                {...tooltip("Сгенерировать картинку", "bottom")}
+                className="grid h-8 w-8 cursor-pointer place-items-center rounded-full bg-surface-3 text-muted transition-[background-color,color,scale] duration-150 ease-[var(--rg-ease)] hover:bg-amber hover:text-ink active:scale-[0.96]"
               >
-                {generating ? (
-                  <LoaderCircle size={16} strokeWidth={1.75} className="animate-spin" />
-                ) : (
-                  <Sparkles size={16} strokeWidth={1.75} />
-                )}
+                <Sparkles size={16} strokeWidth={1.75} />
               </button>
             )
           }
         />
       </FormGroup>
+
+      <ImageGenDialog
+        open={generatorOpen}
+        subject={{ title, note: description, category: categoryLabel, currentSrc: photo.src }}
+        onClose={() => setGeneratorOpen(false)}
+        onApply={(file) => photo.pick([file])}
+      />
 
       <div className="grid grid-cols-2 gap-0.5">
         <DatePicker
