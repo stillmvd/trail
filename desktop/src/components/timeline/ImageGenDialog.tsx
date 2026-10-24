@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { AnimatePresence, motion } from "motion/react";
 import { ChevronDown, ImageIcon, LoaderCircle, Power, RotateCcw, Sparkles } from "lucide-react";
 import { Dialog } from "@/components/ui/Dialog";
 import { Button } from "@/components/ui/Button";
@@ -20,6 +21,14 @@ import {
 
 const PREVIEWS = import.meta.glob<string>("@/assets/imagegen/*.webp", { eager: true, import: "default" });
 const preview = (id: string) => Object.entries(PREVIEWS).find(([path]) => path.endsWith(`/${id}.webp`))?.[1];
+
+const SPRING = { type: "spring", bounce: 0, duration: 0.3 } as const;
+const SWAP = {
+  initial: { opacity: 0, scale: 0.96 },
+  animate: { opacity: 1, scale: 1 },
+  exit: { opacity: 0, scale: 0.96 },
+  transition: SPRING,
+};
 
 const loadEngine = async (): Promise<EngineState | null> =>
   imageProviderStore.get() === "comfyui" ? comfyState() : null;
@@ -162,24 +171,43 @@ function ImageGenBody({
       <div className="grid grid-cols-[1fr_300px] gap-6">
         <div className="flex min-w-0 flex-col gap-3">
           <div className="relative aspect-video overflow-hidden rounded-3xl bg-surface-2">
-            {shown ? (
-              <img src={shown} alt="" className={`h-full w-full object-cover transition-opacity duration-200 ${busy ? "opacity-40" : ""}`} />
-            ) : (
-              <div className="grid h-full place-items-center text-muted">
-                <ImageIcon size={44} strokeWidth={1.5} />
-              </div>
-            )}
+            <AnimatePresence initial={false}>
+              {shown && (
+                <motion.img
+                  key={shown}
+                  src={shown}
+                  alt=""
+                  className="absolute inset-0 h-full w-full object-cover"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: busy ? 0.4 : 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={SPRING}
+                />
+              )}
+            </AnimatePresence>
             {!current && subject.currentSrc && !busy && (
               <span className="absolute left-3 top-3 rounded-full bg-surface-1/80 px-3 py-1 text-xs font-medium text-app-text">Сейчас</span>
             )}
-            {busy && (
-              <div className="absolute inset-0 grid place-items-center">
-                <div className="flex items-center gap-3 rounded-full bg-surface-1/90 px-5 py-3 text-sm font-medium text-app-text">
-                  <LoaderCircle size={18} strokeWidth={1.75} className="animate-spin" />
-                  {busy} · {elapsed} с
-                </div>
-              </div>
-            )}
+            <div className="absolute inset-0 grid place-items-center">
+              <AnimatePresence mode="wait" initial={false}>
+                {busy ? (
+                  <motion.div
+                    key="busy"
+                    className="flex items-center gap-3 rounded-full bg-surface-1/90 px-5 py-3 text-sm font-medium text-app-text"
+                    {...SWAP}
+                  >
+                    <LoaderCircle size={18} strokeWidth={1.75} className="animate-spin" />
+                    {busy} · {elapsed} с
+                  </motion.div>
+                ) : (
+                  !shown && (
+                    <motion.div key="icon" className="text-muted" {...SWAP}>
+                      <ImageIcon size={44} strokeWidth={1.5} />
+                    </motion.div>
+                  )
+                )}
+              </AnimatePresence>
+            </div>
           </div>
 
           {current && (

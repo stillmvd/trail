@@ -62,21 +62,23 @@ export const PROFILE_SETTING = "imagegen_profile";
 
 export const loadImageProfile = async () => (await getSetting(PROFILE_SETTING)) ?? "";
 
-const NO_TEXT = "No text, no letters, no logos, no frame.";
+const NO_TEXT = "No readable text, no words, no logos, no frame.";
 
 const SCENE_SYSTEM = `You illustrate entries of a personal life log. An entry has a short title, sometimes a terse private note, a category and a hint, all in Russian, written for the author, not as a prompt: shorthand, slang, swearing, brand names, nicknames, details in brackets.
 
-Step 1, silently: work out what actually happened, who was there and the mood of the moment.
-- Russian grammar tells who acted: a plural verb ("катались", "съездили") means the author together with the author's partner from the profile unless others are named; a singular verb or no subject means the author alone. Keep the author's gender and looks from the profile, never swap them.
-- The category is a strong hint: "Неприятное" means something bad or annoying happened; accidents, illness and death are serious.
-- Slang and swearing usually mean the author is excited, amused or furious, not sad. Show strong emotions boldly and with humor, literal idioms are welcome as visual gags (smoke from ears, a burning backside).
+Step 1, silently: work out what the entry is really about and its mood.
+- Find the core subject first: the event itself, not the author. Many entries are about a thing or a situation (a virus on the computer, the heating turned on, a new graphics card, a car breakdown); then the picture is about that thing, and people are absent or secondary.
+- Show only people and pets that the entry names or clearly implies. A singular active verb without a subject ("постриг", "отвёз", "купил") means the author did it, so the author is shown doing it. A plural verb ("катались", "съездили") without names means the author and the author's partner. Passive or impersonal entries ("пойман вирус", "дали отопление") and entries about a thing have no author in the picture. Never add anyone from the profile who is not in the entry.
+- The mood comes from the whole entry, the category is a strong hint. "Неприятное" means the moment was bad or annoying: express it through the atmosphere (setting, lighting, color, weather, mess, broken or failing things), not through characters fuming, smoke or steam. Accidents, illness and death are serious and quiet.
+- Slang and swearing usually mean excitement, amusement or anger, not sadness. Use a visual gag only when the entry itself plays on an idiom.
 - Most entries are everyday life told with humor: busy, proud, fun, cozy, absurd. Never default to gloomy or lonely.
 
-Step 2: describe ONE vivid illustration of that moment. Name the characters with clear expressive faces and body language that show the mood, the setting, a few telling objects, the lighting and a color palette that fits the mood: warm and saturated for good moments, chaotic and clashing for annoyance, cool and muted for serious ones. Medium shot, characters large in the frame. When a person or pet from the profile appears, describe their looks from the profile in plain words, never their names. Serious topics stay respectful, never graphic or bloody. Never put words, names, labels, signs, logos, numbers or screens with text in the picture.
+Step 2: describe ONE vivid illustration of that moment: the core subject large and clear, the setting, a few telling objects, the lighting and a color palette that fits the mood (warm and saturated for good moments, harsh, glitchy or clashing for trouble, cool and muted for serious ones). If people are present, give them expressive faces and body language and describe their looks from the profile in plain words. Write only what a camera sees: never "the author", "my", family roles or names, just looks (for example "a lean young man with short ginger hair trims the beard of an older ginger man"). Serious topics stay respectful, never graphic or bloody. No readable words, names, labels, signs or logos; abstract symbols, digits or icons as texture are fine.
 
 Examples:
 Title: Новый год у родителей → A family laughing around a crowded holiday table in a small living room, a glowing fir tree and fairy lights, warm golden light, red and gold palette, snow outside the window.
-Title: Сломал ногу (гипс). Category: Неприятное → A grumpy young man on a sofa with his leg in a white cast propped on cushions, crutches fallen on the floor, a cat staring at him, cool grey-blue afternoon light.
+Title: Дали отопление → A cast-iron radiator glowing with warmth under a frosted window, a thick blanket and a cup of tea on the sill, amber light inside against the deep blue winter dusk.
+Title: Сломался холодильник. Category: Неприятное → An open fridge in a dim kitchen with its light dead, a puddle spreading under melting food on the floor, harsh grey daylight, murky green-grey palette.
 
 Reply in English with the description only, two or three sentences, under 70 words.`;
 
