@@ -2,6 +2,7 @@ import { useEffect, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "motion/react";
 import { X } from "lucide-react";
+import { useBack } from "@/lib/back";
 
 export function Dialog({
   open,
@@ -18,6 +19,8 @@ export function Dialog({
   zIndex?: number;
   children: ReactNode;
 }) {
+  useBack(open, onClose);
+
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();

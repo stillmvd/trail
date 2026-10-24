@@ -1,5 +1,6 @@
 import { useEffect, type ReactNode } from "react";
 import { createPortal } from "react-dom";
+import { useBack } from "@/lib/back";
 
 export type ContextMenuItem = {
   label: string;
@@ -21,6 +22,8 @@ export function ContextMenu({
   items: ContextMenuItem[];
   onClose: () => void;
 }) {
+  useBack(open, onClose);
+
   useEffect(() => {
     if (!open) return;
     const close = () => onClose();

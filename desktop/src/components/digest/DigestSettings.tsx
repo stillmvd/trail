@@ -4,6 +4,7 @@ import { DigestPickTab, DigestRunTab } from "@/components/settings/DigestSetting
 import { DigestSourceManager } from "@/components/settings/DigestSourceManager";
 import { digestScreenStore, digestSettingsTabStore, type DigestSettingsTab } from "@/lib/digest/stores";
 import { useDigest } from "./DigestProvider";
+import { useBack } from "@/lib/back";
 
 const TABS: { value: DigestSettingsTab; label: string }[] = [
   { value: "pick", label: "Отбор" },
@@ -14,6 +15,7 @@ const TABS: { value: DigestSettingsTab; label: string }[] = [
 export function DigestSettings() {
   const tab = digestSettingsTabStore.use();
   const { status } = useDigest();
+  useBack(true, () => digestScreenStore.set("feed"));
   if (!status) return null;
   const { config } = status;
 

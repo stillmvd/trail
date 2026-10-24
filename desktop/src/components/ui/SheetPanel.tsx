@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import { AnimatePresence, motion, useIsPresent } from "motion/react";
 import { ChevronLeft } from "lucide-react";
 import { useSheetOverlay } from "./SideSheet";
+import { useBack } from "@/lib/back";
 
 export function SheetLayer({
   open,
@@ -33,6 +34,8 @@ export function SheetPanel({
   const backRef = useRef(onBack);
   const present = useIsPresent();
   const presentRef = useRef(present);
+
+  useBack(present, () => backRef.current());
 
   useEffect(() => {
     backRef.current = onBack;

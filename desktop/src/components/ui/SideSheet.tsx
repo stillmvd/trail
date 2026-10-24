@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from "
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "motion/react";
 import { X } from "lucide-react";
+import { useBack } from "@/lib/back";
 
 const SHEET_WIDTH = 430;
 
@@ -30,6 +31,7 @@ export function SideSheet({
 }) {
   const [slot, setSlot] = useState<HTMLElement | null>(null);
   const [overlay, setOverlay] = useState<HTMLElement | null>(null);
+  useBack(open, onClose);
 
   useEffect(() => {
     if (!open) return;

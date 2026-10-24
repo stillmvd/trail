@@ -9,6 +9,7 @@ import { SearchHost } from "./components/search/SearchHost";
 import { UpdateToast } from "@stillmvd/tauri-ship";
 import { modeStore, type ViewMode } from "./lib/mode";
 import { useApplyTheme } from "./lib/theme";
+import { useBackButton } from "./lib/back";
 import { useCloseToTray } from "./lib/behavior";
 import { useNotifications } from "./lib/notifications";
 import { useAutoBackup } from "./lib/backup";
@@ -44,6 +45,7 @@ export default function App() {
   useAutoBackup();
   useDigestScheduler();
   const mode = modeStore.use();
+  useBackButton(mode);
   const Page = PAGES[mode];
 
   return (

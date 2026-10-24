@@ -11,6 +11,7 @@ import { EMPTY_FILTER, isFilterActive, matchesFilter, type EventFilter } from "@
 import type { Significance } from "@/lib/constants";
 import type { CategoryNode } from "@/db/queries/categories";
 import type { TimelineEvent } from "@/db/queries/events";
+import { useBack } from "@/lib/back";
 
 const MAX_RESULTS = 8;
 
@@ -37,6 +38,8 @@ export function SearchPanel({
   useEffect(() => {
     if (open) inputRef.current?.focus();
   }, [open]);
+
+  useBack(open, onClose);
 
   useEffect(() => {
     if (!open) return;

@@ -12,6 +12,7 @@ import { todayISO } from "@/lib/dates";
 import { openDigestSettings } from "@/lib/digest/stores";
 import { pluralRu } from "@/lib/duration";
 import { useQuery } from "@/lib/useQuery";
+import { useBack } from "@/lib/back";
 import { searchItems } from "@/db/queries/digestItems";
 import type { DigestEntry } from "@/db/queries/digests";
 import { useDigest } from "./DigestProvider";
@@ -74,6 +75,8 @@ export function DigestView() {
   const [savedView, setSavedView] = useState(false);
   const [archiveOpen, setArchiveOpen] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
+  useBack(query !== "", () => setQuery(""));
+  useBack(savedView, () => setSavedView(false));
 
   const today = todayISO();
   const empty =

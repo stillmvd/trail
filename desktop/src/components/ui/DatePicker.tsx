@@ -6,6 +6,7 @@ import { CalendarDays, ChevronDown, ChevronLeft, ChevronRight, X } from "lucide-
 import "react-day-picker/style.css";
 import { formatFullRu } from "@/lib/dates";
 import { WheelField } from "./WheelField";
+import { useBack } from "@/lib/back";
 
 function CalCaption({ calendarMonth, minDate, maxDate }: MonthCaptionProps & { minDate?: Date; maxDate?: Date }) {
   const { goToMonth, previousMonth, nextMonth } = useDayPicker();
@@ -118,6 +119,8 @@ export function DatePicker({
   const selected = value ? parseISO(value) : undefined;
   const minDate = min ? parseISO(min) : undefined;
   const maxDate = max ? parseISO(max) : undefined;
+
+  useBack(open, () => setOpen(false));
 
   useEffect(() => {
     if (!open) return;

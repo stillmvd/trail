@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "motion/react";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
+import { useBack } from "@/lib/back";
 
 export function Lightbox({
   open,
@@ -17,6 +18,8 @@ export function Lightbox({
   onClose: () => void;
 }) {
   const count = images.length;
+
+  useBack(open, onClose);
 
   useEffect(() => {
     if (!open) return;

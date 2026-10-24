@@ -15,6 +15,7 @@ import { CoverPlaceholder } from "@/components/ui/CoverPlaceholder";
 import type { TimelineEvent } from "@/db/queries/events";
 import type { Mark } from "@/db/queries/marks";
 import type { Significance } from "@/lib/constants";
+import { useBack } from "@/lib/back";
 
 interface DayEventsDialogProps {
   open: boolean;
@@ -57,6 +58,8 @@ export function DayEventsDialog({
   const groupsCount =
     (periods.length > 0 ? 1 : 0) + (moments.length > 0 ? 1 : 0) + (marks.length > 0 ? 1 : 0);
   const showLabels = groupsCount >= 2;
+
+  useBack(open, onClose);
 
   useEffect(() => {
     if (!open) return;

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { ChevronDown, ChevronUp, Clock, Plus } from "lucide-react";
+import { useBack } from "@/lib/back";
 
 const pad = (n: number) => String(n).padStart(2, "0");
 
@@ -82,6 +83,8 @@ export function TimePicker({
 }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+
+  useBack(open, () => setOpen(false));
 
   useEffect(() => {
     if (!open) return;

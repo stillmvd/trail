@@ -1,6 +1,7 @@
 import { createElement, useEffect, useRef, useState } from "react";
 import { ChevronDown, Check } from "lucide-react";
 import { resolveIconOrNull } from "@/lib/icons";
+import { useBack } from "@/lib/back";
 
 export type SelectOption = {
   value: string;
@@ -44,6 +45,8 @@ export function Select({
     if (!list || !active) return;
     list.scrollTop = active.offsetTop - list.clientHeight / 2 + active.offsetHeight / 2;
   }, [open]);
+
+  useBack(open, () => setOpen(false));
 
   useEffect(() => {
     if (!open) return;
