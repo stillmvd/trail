@@ -178,7 +178,7 @@ export function SettingsPage() {
 
         <Section
           title="Картинки"
-          description="Иллюстрация к событию по названию и заметке. Сцену придумывает бесплатная модель OpenRouter, Cloudflare или локальная LM Studio — что доступно."
+          description="Иллюстрация к событию по названию, заметке и категории. Сцену придумывает Gemini через OpenRouter, без ключа — Cloudflare или локальная LM Studio."
         >
           <ImageGenPanel />
         </Section>

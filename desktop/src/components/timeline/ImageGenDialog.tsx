@@ -3,15 +3,14 @@ import { ChevronDown, ImageIcon, LoaderCircle, Power, RotateCcw, Sparkles } from
 import { Dialog } from "@/components/ui/Dialog";
 import { Button } from "@/components/ui/Button";
 import { Textarea } from "@/components/ui/Textarea";
-import { getSetting, setSetting } from "@/db/queries/settings";
-import { setQueryData, useQuery } from "@/lib/useQuery";
+import { useQuery } from "@/lib/useQuery";
 import {
   IMAGE_STYLES,
-  PROFILE_SETTING,
   comfyState,
   describeScene,
   imageProviderStore,
   imageStyleStore,
+  loadImageProfile,
   releaseImageModels,
   renderImage,
   sceneModelLabel,
@@ -22,7 +21,6 @@ import {
 const PREVIEWS = import.meta.glob<string>("@/assets/imagegen/*.webp", { eager: true, import: "default" });
 const preview = (id: string) => Object.entries(PREVIEWS).find(([path]) => path.endsWith(`/${id}.webp`))?.[1];
 
-const loadProfile = async () => (await getSetting(PROFILE_SETTING)) ?? "";
 const loadEngine = async (): Promise<EngineState | null> =>
   imageProviderStore.get() === "comfyui" ? comfyState() : null;
 
@@ -70,10 +68,7 @@ function ImageGenBody({
   const styleId = imageStyleStore.use();
   const provider = imageProviderStore.use();
   const [hint, setHint] = useState("");
-  const savedProfile = useQuery(loadProfile).data;
-  const [draft, setDraft] = useState<string | null>(null);
-  const profile = draft ?? savedProfile;
-  const [profileOpen, setProfileOpen] = useState(false);
+  const profile = useQuery(loadImageProfile).data;
   const checked = useQuery(loadEngine, { key: `imagegen-engine:${provider}` });
   const [starting, setStarting] = useState(false);
   const engine: EngineState | "starting" | null = starting ? "starting" : checked.data;
@@ -86,8 +81,6 @@ function ImageGenBody({
   const [sceneOpen, setSceneOpen] = useState(false);
   const sceneCache = useRef<{ key: string; text: string } | null>(null);
   const urls = useRef<string[]>([]);
-  const saveTimer = useRef<number>(undefined);
-  const unsaved = useRef<string | null>(null);
   const closeRef = useRef(onClose);
 
   useEffect(() => {
@@ -107,8 +100,6 @@ function ImageGenBody({
   useEffect(() => {
     const list = urls.current;
     return () => {
-      window.clearTimeout(saveTimer.current);
-      if (unsaved.current !== null) void setSetting(PROFILE_SETTING, unsaved.current);
       list.forEach((u) => URL.revokeObjectURL(u));
       void releaseImageModels();
     };
@@ -119,17 +110,6 @@ function ImageGenBody({
     const id = window.setInterval(() => setNow(Date.now()), 250);
     return () => window.clearInterval(id);
   }, [busy]);
-
-  function editProfile(value: string) {
-    setDraft(value);
-    setQueryData(loadProfile, value);
-    unsaved.current = value;
-    window.clearTimeout(saveTimer.current);
-    saveTimer.current = window.setTimeout(() => {
-      unsaved.current = null;
-      void setSetting(PROFILE_SETTING, value);
-    }, 500);
-  }
 
   async function launch() {
     setStarting(true);
@@ -143,21 +123,23 @@ function ImageGenBody({
     }
   }
 
-  async function generate(freshScene = false) {
+  async function generate() {
     setError(null);
     setStartedAt(Date.now());
     setNow(Date.now());
     try {
       const input = { title: subject.title, note: subject.note, category: subject.category, hint, profile: profile ?? "" };
       const key = JSON.stringify(input);
-      let scene = sceneCache.current?.key === key && !freshScene ? sceneCache.current.text : null;
+      const style = imageStyleStore.get();
+      const last = attempts[attempts.length - 1];
+      const styleOnly = sceneCache.current?.key === key && last !== undefined && last.styleId !== style;
+      let scene = styleOnly ? sceneCache.current!.text : null;
       if (!scene) {
         setBusy("Пишу сцену");
         scene = await describeScene(input);
         sceneCache.current = { key, text: scene };
       }
       setBusy("Рисую");
-      const style = imageStyleStore.get();
       const file = await renderImage(scene, style, (m) => setBusy(m));
       if (provider === "comfyui") checked.reload();
       const url = URL.createObjectURL(file);
@@ -244,26 +226,6 @@ function ImageGenBody({
             placeholder="Например: мы вдвоём, Настя на соседней доске"
           />
 
-          <div className="flex flex-col gap-2">
-            <button
-              type="button"
-              onClick={() => setProfileOpen(!profileOpen)}
-              className="flex cursor-pointer items-center gap-1.5 text-xs font-medium text-muted hover:text-app-text"
-            >
-              <ChevronDown size={14} strokeWidth={1.75} className={`transition-transform ${profileOpen ? "" : "-rotate-90"}`} />
-              Кто есть кто
-              {profile !== null && !profile.trim() && <span className="font-normal">· не заполнено</span>}
-            </button>
-            {profileOpen && (
-              <Textarea
-                value={profile ?? ""}
-                onChange={editProfile}
-                rows={8}
-                placeholder="Кто ты, кто есть кто в событиях, как выглядят люди и питомцы"
-              />
-            )}
-          </div>
-
           <div className="flex flex-col gap-1 text-[13px] text-muted">
             {provider === "comfyui" && (
               <div className="flex items-center justify-between gap-2">
@@ -326,18 +288,13 @@ function ImageGenBody({
           Отмена
         </Button>
         <div className="flex gap-2">
-          {attempts.length > 0 && (
-            <Button variant="ghost" onClick={() => generate(true)} disabled={!!busy || profile === null}>
-              Новая сцена
-            </Button>
-          )}
           <Button
             variant={current ? "secondary" : "primary"}
-            onClick={() => generate()}
+            onClick={generate}
             disabled={!!busy || profile === null}
           >
             {current ? <RotateCcw size={16} strokeWidth={1.75} /> : <Sparkles size={16} strokeWidth={1.75} />}
-            {current ? "Перегенерировать" : "Сгенерировать"}
+            {current ? "Ещё вариант" : "Сгенерировать"}
           </Button>
           {current && (
             <Button

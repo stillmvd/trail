@@ -1,5 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 import { fetch } from "@tauri-apps/plugin-http";
+import { getSetting } from "@/db/queries/settings";
 import { createLocalStore } from "./localStore";
 import { apiError, OPENROUTER_CHAT_URL, openRouterKeyStore, postJson } from "./openrouter";
 
@@ -58,6 +59,8 @@ export const IMAGE_STYLES: ImageStyle[] = [
 export const imageStyleStore = createLocalStore<string>("trail.imagegen.style", IMAGE_STYLES[0].id);
 
 export const PROFILE_SETTING = "imagegen_profile";
+
+export const loadImageProfile = async () => (await getSetting(PROFILE_SETTING)) ?? "";
 
 const NO_TEXT = "No text, no letters, no logos, no frame.";
 

@@ -1,14 +1,20 @@
+import { useEffect, useRef, useState } from "react";
 import { Input } from "@/components/ui/Input";
 import { SegmentedControl } from "@/components/ui/SegmentedControl";
+import { Textarea } from "@/components/ui/Textarea";
+import { setSetting } from "@/db/queries/settings";
 import {
+  PROFILE_SETTING,
   cfAccountStore,
   cfTokenStore,
   comfyDirStore,
   comfyUrlStore,
   imageProviderStore,
+  loadImageProfile,
   type ImageProvider,
 } from "@/lib/imageGen";
 import { openRouterKeyStore } from "@/lib/openrouter";
+import { setQueryData, useQuery } from "@/lib/useQuery";
 
 const PROVIDER_SEGMENTS: { value: ImageProvider; label: string }[] = [
   { value: "comfyui", label: "ComfyUI" },
@@ -57,8 +63,50 @@ export function ImageGenPanel() {
         type="password"
         value={orKey}
         onChange={openRouterKeyStore.set}
-        placeholder={provider === "openrouter" ? "" : "Необязательно — бесплатные модели для сцены"}
+        placeholder={provider === "openrouter" ? "" : "Необязательно — Gemini для сцены"}
       />
+      <ProfileField />
+    </div>
+  );
+}
+
+function ProfileField() {
+  const saved = useQuery(loadImageProfile).data;
+  const [draft, setDraft] = useState<string | null>(null);
+  const timer = useRef<number>(undefined);
+  const pending = useRef<string | null>(null);
+
+  useEffect(
+    () => () => {
+      window.clearTimeout(timer.current);
+      if (pending.current !== null) void setSetting(PROFILE_SETTING, pending.current);
+    },
+    [],
+  );
+
+  function change(value: string) {
+    setDraft(value);
+    setQueryData(loadImageProfile, value);
+    pending.current = value;
+    window.clearTimeout(timer.current);
+    timer.current = window.setTimeout(() => {
+      pending.current = null;
+      void setSetting(PROFILE_SETTING, value);
+    }, 500);
+  }
+
+  return (
+    <div className="flex flex-col gap-1">
+      <Textarea
+        label="Кто есть кто"
+        value={draft ?? saved ?? ""}
+        onChange={change}
+        rows={8}
+        placeholder="Кто ты, кто есть кто в событиях, как выглядят люди, питомцы и машины"
+      />
+      <p className="px-1 text-[13px] leading-snug text-muted">
+        Уходит в промпт сцены, чтобы на картинках были узнаваемые вы. Модель берёт только тех, кто есть в событии.
+      </p>
     </div>
   );
 }
