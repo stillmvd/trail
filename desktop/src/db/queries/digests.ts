@@ -154,6 +154,14 @@ export async function markEntryOpened(digestId: number, itemId: number): Promise
   );
 }
 
+export async function markMainOpened(digestId: number): Promise<void> {
+  const db = await getDb();
+  await db.execute(
+    `UPDATE digest_entries SET opened_at = COALESCE(opened_at, ?) WHERE digest_id = ? AND tier = 'main'`,
+    [new Date().toISOString(), digestId],
+  );
+}
+
 export async function allMainOpened(digestId: number): Promise<boolean> {
   const db = await getDb();
   const rows = await db.select<{ left: number }[]>(

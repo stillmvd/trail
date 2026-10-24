@@ -14,6 +14,7 @@ import {
   listEntries,
   markDigestViewed,
   markEntryOpened,
+  markMainOpened,
   type Digest,
   type DigestEntry,
 } from "@/db/queries/digests";
@@ -138,6 +139,7 @@ export function DigestProvider({ children }: { children: ReactNode }) {
 
   const markViewed = async () => {
     if (digestId === null) return;
+    await markMainOpened(digestId);
     await markDigestViewed(digestId);
     await refreshUnseen();
     bumpDigestVersion();
