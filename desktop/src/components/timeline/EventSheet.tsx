@@ -1,17 +1,10 @@
 import { createElement, useState } from "react";
-import {
-  Bell,
-  BellRing,
-  CalendarClock,
-  CalendarRange,
-  Hourglass,
-  Pencil,
-  Target,
-  Trash2,
-} from "lucide-react";
+import { differenceInCalendarDays, parseISO } from "date-fns";
+import { Bell, Pencil, Trash2 } from "lucide-react";
 import { useReminders } from "@/components/events/RemindersProvider";
-import { formatFullRu, formatDayMonthRu, formatWeekdayFullRu } from "@/lib/dates";
-import { elapsedSince, remainingUntil, formatYMD, isFuture } from "@/lib/duration";
+import { SpanHero, TrackingTiles } from "@/components/tracking/TrackingParts";
+import { formatFullRu, formatDayMonthRu } from "@/lib/dates";
+import { elapsedSince, remainingUntil, formatYMD, isFuture, totalDaysCount } from "@/lib/duration";
 import { getSignificanceMeta } from "@/lib/significance";
 import { eventAccent } from "@/lib/accent";
 import { resolveIconOrNull } from "@/lib/icons";
@@ -31,8 +24,6 @@ import type { MarkType } from "@/db/queries/markTypes";
 import type { TimelineEvent } from "@/db/queries/events";
 import type { EventMedia } from "@/db/queries/media";
 import type { Significance } from "@/lib/constants";
-
-const cap = (s: string) => (s ? s[0].toUpperCase() + s.slice(1) : s);
 
 export type EventSheetState =
   | { mode: "create"; dateISO: string }
@@ -214,23 +205,14 @@ function EventView({
     ? `${formatDayMonthRu(event.date)} ↔ ${formatFullRu(event.end_date as string)}`
     : formatFullRu(event.date);
 
-  const hero = period
-    ? {
-        icon: <CalendarRange size={14} strokeWidth={1.75} />,
-        label: "Длительность",
-        value: formatYMD(event.date, event.end_date as string),
-      }
+  const days = period
+    ? differenceInCalendarDays(parseISO(event.end_date as string), parseISO(event.date))
+    : totalDaysCount(event.date);
+  const ymd = period
+    ? formatYMD(event.date, event.end_date as string)
     : future
-      ? {
-          icon: <BellRing size={14} strokeWidth={1.75} />,
-          label: "Осталось",
-          value: remainingUntil(event.date),
-        }
-      : {
-          icon: <Hourglass size={14} strokeWidth={1.75} />,
-          label: "Уже прошло",
-          value: elapsedSince(event.date),
-        };
+      ? remainingUntil(event.date)
+      : elapsedSince(event.date);
 
   return (
     <div className="flex flex-col gap-4">
@@ -254,16 +236,6 @@ function EventView({
         <p className="mt-0.5 text-sm text-muted">{dateLabel}</p>
       </div>
 
-      <div className="rounded-3xl px-5 py-4" style={{ background: "var(--ds-surface-3)" }}>
-        <span className="flex items-center gap-1.5 text-xs font-medium text-muted">
-          {hero.icon}
-          {hero.label}
-        </span>
-        <span className="mt-1 block text-[28px] font-bold leading-none tabular-nums text-app-text">
-          {hero.value}
-        </span>
-      </div>
-
       <div className="flex flex-wrap gap-2">
         {event.category_name && (
           <span
@@ -278,17 +250,15 @@ function EventView({
           icon={<SignificanceIcon level={event.significance as Significance} size={12} />}
           value={sig.label}
         />
-        {!period && (
-          <MetricChip
-            icon={<CalendarClock size={12} strokeWidth={1.75} />}
-            label="День"
-            value={cap(formatWeekdayFullRu(event.date))}
-          />
-        )}
-        {event.track === 1 && (
-          <MetricChip icon={<Target size={12} strokeWidth={1.75} />} value="Отслеживается" />
-        )}
       </div>
+
+      <SpanHero
+        label={period ? "длительность" : future ? "осталось" : "прошло"}
+        days={days}
+        subs={days >= 30 ? [ymd] : []}
+      />
+
+      <TrackingTiles dateISO={event.date} />
 
       {event.description && (
         <p className="whitespace-pre-wrap text-[15px] leading-relaxed text-app-text/90">

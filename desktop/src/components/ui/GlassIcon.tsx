@@ -39,6 +39,18 @@ const ICONS = {
     glyph: `<circle cx="34" cy="53" r="7" fill="#fff"/><path d="M21 74c2-7 7-11 13-11s11 4 13 11" ${S(4.4)}/>`,
     dot: [86, 84, 5],
   },
+  hourglass: {
+    back: `<path d="M42 8h40v8c0 12-13 16-13 22s13 10 13 22v10H42V60c0-12 13-16 13-22S42 28 42 16z" fill="url(#U-gb)" stroke="url(#U-gb)" stroke-width="3" stroke-linejoin="round"/><path d="M50 64h24" ${S(3)} stroke-opacity=".45"/>`,
+    front: `<circle cx="36" cy="60" r="27"/>`,
+    glyph: `<path d="M36 74s-13-7.5-13-16.5a7 7 0 0 1 13-3.6 7 7 0 0 1 13 3.6C49 66.5 36 74 36 74z" fill="#fff"/>`,
+    dot: [86, 84, 5],
+  },
+  week: {
+    back: `<path d="M62 8a30 30 0 1 1 0 60 30 30 0 0 1 0-60z" fill="url(#U-gb)"/><path d="M62 20v18l11 7" ${S(4)} stroke-opacity=".5"/>`,
+    front: `<rect x="4" y="46" width="62" height="38" rx="15"/>`,
+    glyph: `<circle cx="15" cy="65" r="3.6" fill="#fff" fill-opacity=".5"/><circle cx="25" cy="65" r="3.6" fill="#fff" fill-opacity=".5"/><circle cx="35" cy="65" r="5.4" fill="#fff"/><circle cx="45" cy="65" r="3.6" fill="#fff" fill-opacity=".5"/><circle cx="55" cy="65" r="3.6" fill="#fff" fill-opacity=".5"/>`,
+    dot: [16, 22, 5],
+  },
 } as const;
 
 export type GlassIconName = keyof typeof ICONS;

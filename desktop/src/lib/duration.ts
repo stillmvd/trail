@@ -79,12 +79,14 @@ export function nextAnniversary(dateISO: string): { ordinal: number; daysUntil: 
   };
 }
 
-export function formatNextAnniversary(dateISO: string): string | null {
+export function anniversaryAhead(dateISO: string): { ordinal: number; daysUntil: number } | null {
   const a = nextAnniversary(dateISO);
-  if (!a) return null;
-  const label = unit(a.ordinal, YEARS);
-  if (a.daysUntil === 0) return `${label} · сегодня`;
-  return `${label} · через ${unit(a.daysUntil, DAYS)}`;
+  if (!a || a.ordinal > 0) return a;
+  const origin = parseISO(dateISO);
+  return {
+    ordinal: 1,
+    daysUntil: differenceInCalendarDays(anniversaryInYear(origin, origin.getFullYear() + 1), parseISO(todayISO())),
+  };
 }
 
 /**
