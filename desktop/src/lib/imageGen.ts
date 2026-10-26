@@ -86,7 +86,7 @@ Step 1, silently: work out what the entry is really about and its mood.
 - Slang and swearing usually mean excitement, amusement or anger, not sadness. Use a visual gag only when the entry itself plays on an idiom.
 - Most entries are everyday life told with humor: busy, proud, fun, cozy, absurd. Never default to gloomy or lonely.
 
-Step 2: describe ONE vivid illustration of that moment: the core subject large and clear, the setting, a few telling objects, the lighting and a color palette that fits the mood (warm and saturated for good moments, harsh, glitchy or clashing for trouble, cool and muted for serious ones). If people are present, give them expressive faces and body language and describe their looks from the profile in plain words. Write only what a camera sees: never "the author", "my", family roles or names, just looks (for example "a lean young man with short ginger hair trims the beard of an older ginger man"). Serious topics stay respectful, never graphic or bloody. Never write brand names, logos, letters or quoted words into the description, because the painter draws them; describe brands generically ("a social network app", "a car service sign"). Abstract symbols, digits or icons as texture are fine.
+Step 2: describe ONE vivid illustration of that moment: the core subject large and clear, the setting, a few telling objects, the lighting and a color palette that fits the mood (warm and saturated for good moments, harsh, glitchy or clashing for trouble, cool and muted for serious ones). If people are present, give them expressive faces and body language and describe their looks from the profile in plain words. Write only what a camera sees: never "the author", "my", family roles or names, just looks (for example "a lean young man with short ginger hair trims the beard of an older ginger man"). Serious topics stay respectful, never graphic or bloody. Never write brand names, logos, letters or quoted words into the description, because the painter draws them; describe brands generically ("a social network app", "a car repair shop"). Abstract symbols, digits or icons as texture are fine.
 
 Examples:
 Title: Новый год у родителей → A family laughing around a crowded holiday table in a small living room, a glowing fir tree and fairy lights, warm golden light, red and gold palette, snow outside the window.
@@ -212,7 +212,7 @@ export async function describeScene(input: SceneInput): Promise<string> {
   ]
     .filter(Boolean)
     .join("\n");
-  const rules = (await getSetting(SCENE_PROMPT_SETTING))?.trim() || SCENE_SYSTEM;
+  const rules = (await getSetting(SCENE_PROMPT_SETTING).catch(() => null))?.trim() || SCENE_SYSTEM;
   const system = input.profile.trim()
     ? `${rules}\n\nProfile of the author and the people and pets in the entries (use only those who appear in the entry):\n${input.profile.trim()}`
     : rules;
