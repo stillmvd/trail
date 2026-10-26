@@ -62,6 +62,18 @@ export const PROFILE_SETTING = "imagegen_profile";
 
 export const loadImageProfile = async () => (await getSetting(PROFILE_SETTING)) ?? "";
 
+const SCENE_PROMPT_SETTING = "imagegen_scene_prompt";
+const STYLE_PROMPTS_SETTING = "imagegen_style_prompts";
+
+async function stylePrompt(style: ImageStyle): Promise<string> {
+  try {
+    const overrides = JSON.parse((await getSetting(STYLE_PROMPTS_SETTING)) || "{}");
+    return typeof overrides[style.id] === "string" && overrides[style.id].trim() ? overrides[style.id] : style.prompt;
+  } catch {
+    return style.prompt;
+  }
+}
+
 const NO_TEXT = "No readable text, no words, no logos, no frame.";
 
 const SCENE_SYSTEM = `You illustrate entries of a personal life log. An entry has a short title, sometimes a terse private note, a category and a hint, all in Russian, written for the author, not as a prompt: shorthand, slang, swearing, brand names, nicknames, details in brackets.
@@ -114,7 +126,7 @@ export async function renderImage(
   onStatus?: (message: string) => void,
 ): Promise<File> {
   const style = IMAGE_STYLES.find((s) => s.id === styleId) ?? IMAGE_STYLES[0];
-  const prompt = `${scene}\n\n${style.prompt} ${NO_TEXT}`;
+  const prompt = `${scene}\n\n${await stylePrompt(style)} ${NO_TEXT}`;
   const provider = imageProviderStore.get();
   if (provider === "cloudflare") return generateCloudflare(prompt);
   if (provider === "openrouter") return generateOpenRouter(prompt);
@@ -200,9 +212,10 @@ export async function describeScene(input: SceneInput): Promise<string> {
   ]
     .filter(Boolean)
     .join("\n");
+  const rules = (await getSetting(SCENE_PROMPT_SETTING))?.trim() || SCENE_SYSTEM;
   const system = input.profile.trim()
-    ? `${SCENE_SYSTEM}\n\nProfile of the author and the people and pets in the entries (use only those who appear in the entry):\n${input.profile.trim()}`
-    : SCENE_SYSTEM;
+    ? `${rules}\n\nProfile of the author and the people and pets in the entries (use only those who appear in the entry):\n${input.profile.trim()}`
+    : rules;
   return (await askScene(system, entry)) ?? [input.title.trim(), input.note.trim()].filter(Boolean).join(". ");
 }
 
