@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import { carriesImage, imageFromDrop } from "@/lib/imageDrop";
+import { filterAcceptedImages } from "@/lib/media";
 
 const ATTR = "data-event-id";
 const OVER = "data-drop-over";
@@ -16,19 +17,37 @@ function editable(target: EventTarget | null) {
   return target instanceof Element && !!target.closest("input, textarea, [contenteditable='true']");
 }
 
+function selectionAt(target: EventTarget | null): string | null {
+  const sel = window.getSelection();
+  const text = sel && !sel.isCollapsed ? sel.toString() : "";
+  return text.trim() && target instanceof Node && sel?.containsNode(target, true) ? text : null;
+}
+
+function pastedImage(data: DataTransfer | null): File | null {
+  const files = filterAcceptedImages(
+    Array.from(data?.items ?? [])
+      .filter((it) => it.kind === "file")
+      .map((it) => it.getAsFile())
+      .filter((f): f is File => f !== null),
+  );
+  return files[0] ?? null;
+}
+
 export function useEventSurface({
   onMenu,
+  onCopyMenu,
   onImage,
   onImageError,
 }: {
   onMenu: (id: number, x: number, y: number) => void;
+  onCopyMenu: (text: string, x: number, y: number) => void;
   onImage: (id: number, file: File) => void;
   onImageError: (message: string) => void;
 }) {
-  const handlers = useRef({ onMenu, onImage, onImageError });
+  const handlers = useRef({ onMenu, onCopyMenu, onImage, onImageError });
 
   useEffect(() => {
-    handlers.current = { onMenu, onImage, onImageError };
+    handlers.current = { onMenu, onCopyMenu, onImage, onImageError };
   });
 
   useEffect(() => {
@@ -45,8 +64,26 @@ export function useEventSurface({
       if (import.meta.env.DEV && e.shiftKey) return;
       if (editable(e.target)) return;
       e.preventDefault();
+      const text = selectionAt(e.target);
+      if (text) return handlers.current.onCopyMenu(text, e.clientX, e.clientY);
       const target = hit(e.target);
       if (target) handlers.current.onMenu(target.id, e.clientX, e.clientY);
+    };
+
+    let pointer = { x: -1, y: -1 };
+    const onPointerMove = (e: PointerEvent) => {
+      pointer = { x: e.clientX, y: e.clientY };
+    };
+
+    const onPaste = (e: ClipboardEvent) => {
+      if (e.defaultPrevented || editable(document.activeElement)) return;
+      if (document.querySelector("[aria-modal='true']")) return;
+      const target = hit(document.elementFromPoint(pointer.x, pointer.y));
+      if (!target) return;
+      const file = pastedImage(e.clipboardData);
+      if (!file) return;
+      e.preventDefault();
+      handlers.current.onImage(target.id, file);
     };
 
     const onDragOver = (e: DragEvent) => {
@@ -87,6 +124,8 @@ export function useEventSurface({
     };
 
     window.addEventListener("contextmenu", onContextMenu);
+    window.addEventListener("pointermove", onPointerMove, { passive: true });
+    window.addEventListener("paste", onPaste);
     window.addEventListener("dragover", onDragOver);
     window.addEventListener("dragleave", onDragLeave);
     window.addEventListener("drop", onDrop);
@@ -95,6 +134,8 @@ export function useEventSurface({
     return () => {
       mark(null);
       window.removeEventListener("contextmenu", onContextMenu);
+      window.removeEventListener("pointermove", onPointerMove);
+      window.removeEventListener("paste", onPaste);
       window.removeEventListener("dragover", onDragOver);
       window.removeEventListener("dragleave", onDragLeave);
       window.removeEventListener("drop", onDrop);

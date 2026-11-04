@@ -44,7 +44,7 @@ export function MarkForm({
     let valid = true;
 
     if (markTypeId === null) {
-      setTypeError("Выберите тип отметки");
+      setTypeError("Выбери тип отметки");
       valid = false;
     } else {
       setTypeError(undefined);

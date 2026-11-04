@@ -6,7 +6,7 @@ import { usePeople } from "@/components/events/PeopleProvider";
 import { filterStore } from "@/lib/search";
 
 export function CalendarPage() {
-  const { openView, openDay, openCreate, openMarkMenu } = useEvents();
+  const { openView, openDay, openCreate, openMarkMenu, moveEvent } = useEvents();
   const { openViewPerson } = usePeople();
   const filter = filterStore.use();
   const { data, error } = useQuery(loadCalendar);
@@ -33,6 +33,7 @@ export function CalendarPage() {
       onMarkOpen={openDay}
       onMarkMenu={openMarkMenu}
       onPersonOpen={openViewPerson}
+      onEventMove={moveEvent}
     />
   );
 }

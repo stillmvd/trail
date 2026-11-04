@@ -19,6 +19,8 @@ import { SegmentedControl } from "@/components/ui/SegmentedControl";
 import { CoverPlaceholder } from "@/components/ui/CoverPlaceholder";
 import { EventForm, type EventFormPayload, type EventFormValues } from "./EventForm";
 import { MarkForm, type MarkFormPayload } from "./MarkForm";
+import { splitCategory } from "./CategoryPicker";
+import { reminderFromEvent } from "@/lib/reminders";
 import type { CategoryNode } from "@/db/queries/categories";
 import type { MarkType } from "@/db/queries/markTypes";
 import type { TimelineEvent } from "@/db/queries/events";
@@ -30,18 +32,7 @@ export type EventSheetState =
   | { mode: "view"; event: TimelineEvent; media: EventMedia[] }
   | { mode: "edit"; event: TimelineEvent; media: EventMedia[] };
 
-export function splitCategory(
-  cats: CategoryNode[],
-  catId: number | null,
-): { categoryId: number | null; subcategoryId: number | null } {
-  if (catId === null) return { categoryId: null, subcategoryId: null };
-  for (const c of cats) {
-    if (c.id === catId) return { categoryId: c.id, subcategoryId: null };
-    const sub = c.children.find((ch) => ch.id === catId);
-    if (sub) return { categoryId: c.id, subcategoryId: sub.id };
-  }
-  return { categoryId: null, subcategoryId: null };
-}
+export { splitCategory };
 
 interface Props {
   state: EventSheetState | null;
@@ -154,11 +145,7 @@ export function EventSheet({
                   label="Напомнить об этом событии"
                   onClick={() => {
                     close();
-                    openCreateReminder({
-                      title: state.event.title,
-                      date: state.event.date,
-                      eventId: state.event.id,
-                    });
+                    openCreateReminder(reminderFromEvent(state.event));
                   }}
                 >
                   <Bell size={17} strokeWidth={1.75} />

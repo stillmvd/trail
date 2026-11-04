@@ -496,7 +496,13 @@ h2 {
   border-radius: 9999px;
 }
 
+.tl-calendar-lg .tl-cal-cell.is-drop {
+  background: var(--color-surface-active);
+}
+
 .tl-cal-chip-thumb {
+  pointer-events: none;
+  -webkit-user-drag: none;
   flex-shrink: 0;
   width: 14px;
   height: 14px;

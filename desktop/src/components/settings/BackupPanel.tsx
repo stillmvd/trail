@@ -94,7 +94,7 @@ export function BackupPanel() {
 
   async function pickRestore() {
     const picked = await open({
-      title: "Выберите бэкап",
+      title: "Выбери бэкап",
       filters: [{ name: "Бэкап Trail", extensions: ["zip"] }],
     });
     if (typeof picked === "string") setPendingRestore(picked);

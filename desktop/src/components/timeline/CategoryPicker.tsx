@@ -4,8 +4,22 @@ import type { Category, CategoryNode } from "@/db/queries/categories";
 import { resolveIcon } from "@/lib/icons";
 import { onColorFor } from "@/lib/colors";
 import { SheetLayer, SheetPanel } from "@/components/ui/SheetPanel";
+import { SideSheet } from "@/components/ui/SideSheet";
 
 type Pick = (categoryId: number | null, subcategoryId: number | null) => void;
+
+export function splitCategory(
+  cats: CategoryNode[],
+  catId: number | null,
+): { categoryId: number | null; subcategoryId: number | null } {
+  if (catId === null) return { categoryId: null, subcategoryId: null };
+  for (const c of cats) {
+    if (c.id === catId) return { categoryId: c.id, subcategoryId: null };
+    const sub = c.children.find((ch) => ch.id === catId);
+    if (sub) return { categoryId: c.id, subcategoryId: sub.id };
+  }
+  return { categoryId: null, subcategoryId: null };
+}
 
 function Dot({ cat, size }: { cat: Category | null; size: number }) {
   return (
@@ -179,6 +193,36 @@ function Screen({
       </label>
       {body}
     </SheetPanel>
+  );
+}
+
+export function CategorySheet({
+  open,
+  categories,
+  categoryId,
+  onPick,
+  onClose,
+}: {
+  open: boolean;
+  categories: CategoryNode[];
+  categoryId: number | null;
+  onPick: (categoryId: number | null) => void;
+  onClose: () => void;
+}) {
+  const { categoryId: parentId, subcategoryId } = splitCategory(categories, categoryId);
+  return (
+    <SideSheet open={open} onClose={onClose}>
+      <SheetLayer open={open}>
+        <Screen
+          key="screen"
+          categories={categories}
+          categoryId={parentId}
+          subcategoryId={subcategoryId}
+          onClose={onClose}
+          onPick={(cat, sub) => onPick(sub ?? cat)}
+        />
+      </SheetLayer>
+    </SideSheet>
   );
 }
 

@@ -3,14 +3,7 @@ import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "motion/react";
 import { X } from "lucide-react";
 import { useBack } from "@/lib/back";
-
-const NUDGE: Keyframe[] = [
-  { translate: "0 0" },
-  { translate: "-6px 0" },
-  { translate: "6px 0" },
-  { translate: "-3px 0" },
-  { translate: "0 0" },
-];
+import { nudge } from "@/lib/nudge";
 
 export function Dialog({
   open,
@@ -34,9 +27,7 @@ export function Dialog({
   const panel = useRef<HTMLDivElement>(null);
   const onDismiss = useCallback(() => {
     if (!canDismiss || canDismiss()) return onClose();
-    if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      panel.current?.animate(NUDGE, { duration: 280, easing: "ease-out" });
-    }
+    nudge(panel.current);
   }, [canDismiss, onClose]);
 
   useBack(open, onDismiss);

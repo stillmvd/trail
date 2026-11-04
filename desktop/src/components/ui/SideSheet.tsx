@@ -1,8 +1,18 @@
-import { createContext, useContext, useEffect, useState, useSyncExternalStore, type ReactNode } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+  type ReactNode,
+} from "react";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "motion/react";
 import { X } from "lucide-react";
 import { useBack } from "@/lib/back";
+import { nudge } from "@/lib/nudge";
 
 export const SHEET_WIDTH = 430;
 
@@ -20,9 +30,18 @@ export function useAnySheetOpen() {
 
 const HeaderSlotContext = createContext<HTMLElement | null>(null);
 const OverlayContext = createContext<HTMLElement | null>(null);
+const GuardContext = createContext<((dirty: boolean) => void) | null>(null);
 
 export function useSheetOverlay() {
   return useContext(OverlayContext);
+}
+
+export function useSheetGuard(dirty: boolean) {
+  const setDirty = useContext(GuardContext);
+  useEffect(() => {
+    setDirty?.(dirty);
+    return () => setDirty?.(false);
+  }, [setDirty, dirty]);
 }
 
 export function SheetHeaderAction({ children }: { children: ReactNode }) {
@@ -43,7 +62,13 @@ export function SideSheet({
 }) {
   const [slot, setSlot] = useState<HTMLElement | null>(null);
   const [overlay, setOverlay] = useState<HTMLElement | null>(null);
-  useBack(open, onClose);
+  const panel = useRef<HTMLElement>(null);
+  const dirty = useRef(false);
+  const setDirty = useCallback((value: boolean) => {
+    dirty.current = value;
+  }, []);
+  const onDismiss = useCallback(() => (dirty.current ? nudge(panel.current) : onClose()), [onClose]);
+  useBack(open, onDismiss);
 
   useEffect(() => {
     if (!open) return;
@@ -57,10 +82,10 @@ export function SideSheet({
 
   useEffect(() => {
     if (!open) return;
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onDismiss();
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-  }, [open, onClose]);
+  }, [open, onDismiss]);
 
   return createPortal(
     <AnimatePresence>
@@ -73,9 +98,10 @@ export function SideSheet({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
-            onMouseDown={onClose}
+            onMouseDown={onDismiss}
           />
           <motion.aside
+            ref={panel}
             role="dialog"
             aria-modal="true"
             className="fixed right-0 top-0 z-[81] flex h-screen flex-col rounded-l-4xl bg-surface-1 text-app-text shadow-2xl"
@@ -100,7 +126,9 @@ export function SideSheet({
             </header>
             <div className="min-h-0 flex-1 overflow-y-auto px-7 pb-7 [scrollbar-gutter:stable]">
               <HeaderSlotContext.Provider value={slot}>
-                <OverlayContext.Provider value={overlay}>{children}</OverlayContext.Provider>
+                <OverlayContext.Provider value={overlay}>
+                  <GuardContext.Provider value={setDirty}>{children}</GuardContext.Provider>
+                </OverlayContext.Provider>
               </HeaderSlotContext.Provider>
             </div>
             <div ref={setOverlay} className="pointer-events-none absolute inset-0 z-10 overflow-hidden rounded-l-4xl" />

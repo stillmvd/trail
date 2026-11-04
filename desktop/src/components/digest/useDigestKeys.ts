@@ -7,7 +7,19 @@ type Actions = {
   seen: (entry: DigestEntry) => void;
   star: (entry: DigestEntry) => void;
   search: () => void;
+  help: () => void;
 };
+
+export const DIGEST_KEYS: [string, string][] = [
+  ["J / K", "следующий и предыдущий материал"],
+  ["Enter", "открыть"],
+  ["L", "нравится"],
+  ["D", "не нравится"],
+  ["M", "отметить прочитанным"],
+  ["S", "сохранить"],
+  ["/ или Ctrl+F", "поиск"],
+  ["?", "эта подсказка"],
+];
 
 export function useDigestKeys(order: DigestEntry[], actions: Actions) {
   const [selectedId, setSelectedId] = useState<number | null>(null);
@@ -23,8 +35,14 @@ export function useDigestKeys(order: DigestEntry[], actions: Actions) {
         return;
       }
       if (e.ctrlKey || e.metaKey || e.altKey) return;
+      if (document.querySelector("[aria-modal='true']")) return;
       const t = e.target as HTMLElement | null;
       if (t?.tagName === "INPUT" || t?.tagName === "TEXTAREA" || t?.isContentEditable) return;
+      if (e.key === "?") {
+        e.preventDefault();
+        actions.help();
+        return;
+      }
       if (e.code === "Slash") {
         e.preventDefault();
         actions.search();

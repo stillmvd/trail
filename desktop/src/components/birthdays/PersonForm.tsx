@@ -6,6 +6,7 @@ import { SegmentedControl } from "@/components/ui/SegmentedControl";
 import { Button } from "@/components/ui/Button";
 import { FormGroup } from "@/components/ui/FormGroup";
 import { PhotoPicker, usePhotoState, type PhotoChange } from "@/components/ui/PhotoPicker";
+import { useSheetGuard } from "@/components/ui/SideSheet";
 import { TIMELINE_MIN_DATE, TIMELINE_MAX_DATE, isValidISODate } from "@/lib/constants";
 import { todayISO } from "@/lib/dates";
 
@@ -53,6 +54,13 @@ export function PersonForm({
   const [nameError, setNameError] = useState<string>();
   const [dateError, setDateError] = useState<string>();
 
+  useSheetGuard(
+    name !== (initial?.name ?? "") ||
+      hasYear !== (initial?.hasYear ?? true) ||
+      birthDate !== (initial?.birthDate ?? "") ||
+      photo.change().kind !== "keep",
+  );
+
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     let valid = true;
@@ -65,7 +73,7 @@ export function PersonForm({
     }
 
     if (!isValidISODate(birthDate)) {
-      setDateError("Выберите дату рождения");
+      setDateError("Выбери дату рождения");
       valid = false;
     } else if (hasYear && (birthDate < TIMELINE_MIN_DATE || birthDate > todayISO())) {
       setDateError("Дата рождения вне диапазона");

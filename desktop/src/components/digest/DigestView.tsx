@@ -1,4 +1,5 @@
-import { useCallback, useMemo, useRef, useState, type MouseEvent } from "react";
+import { Fragment, useCallback, useMemo, useRef, useState, type MouseEvent } from "react";
+import { Dialog } from "@/components/ui/Dialog";
 import { motion } from "motion/react";
 import { Ban } from "lucide-react";
 import { appear } from "@/lib/appear";
@@ -25,7 +26,7 @@ import { DigestRows } from "./DigestRows";
 import { DigestArchive } from "./DigestArchive";
 import { DigestSaved } from "./DigestSaved";
 import { NearList } from "./NearList";
-import { useDigestKeys } from "./useDigestKeys";
+import { DIGEST_KEYS, useDigestKeys } from "./useDigestKeys";
 
 const MATERIALS: [string, string, string] = ["материал", "материала", "материалов"];
 
@@ -76,6 +77,7 @@ export function DigestView() {
   const [query, setQuery] = useState("");
   const [savedView, setSavedView] = useState(false);
   const [archiveOpen, setArchiveOpen] = useState(false);
+  const [keysOpen, setKeysOpen] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
   useBack(query !== "", () => setQuery(""));
   useBack(savedView, () => setSavedView(false));
@@ -119,6 +121,7 @@ export function DigestView() {
     seen: toggleSeen,
     star: (entry) => toggleStar(entry.item_id),
     search: () => searchRef.current?.focus(),
+    help: () => setKeysOpen(true),
   });
 
   const openMenu = (e: MouseEvent, entry: DigestEntry) => {
@@ -231,6 +234,18 @@ export function DigestView() {
         ]}
         onClose={() => setMenu(null)}
       />
+      <Dialog open={keysOpen} onClose={() => setKeysOpen(false)} title="Горячие клавиши" width={420}>
+        <dl className="grid grid-cols-[auto_1fr] items-center gap-x-4 gap-y-2.5 text-sm">
+          {DIGEST_KEYS.map(([keys, label]) => (
+            <Fragment key={keys}>
+              <dt className="justify-self-start rounded-xs bg-surface-2 px-2 py-1 font-semibold tabular-nums text-app-text">
+                {keys}
+              </dt>
+              <dd className="text-muted">{label}</dd>
+            </Fragment>
+          ))}
+        </dl>
+      </Dialog>
     </div>
   );
 }

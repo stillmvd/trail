@@ -6,7 +6,7 @@ import { TIMELINE_MIN_DATE, TIMELINE_MAX_DATE, isValidISODate, type Significance
 import { todayISO } from "@/lib/dates";
 import { DatePicker } from "@/components/ui/DatePicker";
 import { TextPair } from "@/components/ui/TextPair";
-import { SheetHeaderAction } from "@/components/ui/SideSheet";
+import { SheetHeaderAction, useSheetGuard } from "@/components/ui/SideSheet";
 import { Button } from "@/components/ui/Button";
 import { FormGroup } from "@/components/ui/FormGroup";
 import { PhotoPicker, usePhotoState, type PhotoChange } from "@/components/ui/PhotoPicker";
@@ -95,6 +95,8 @@ export function EventForm({
     categoryId !== (initial?.categoryId ?? null) ||
     subcategoryId !== (initial?.subcategoryId ?? null) ||
     track !== (initial?.track ?? false);
+
+  useSheetGuard(fieldsChanged || photo.change().kind !== "keep");
 
   async function applyGenerated(file: File) {
     if (eventId === undefined) {

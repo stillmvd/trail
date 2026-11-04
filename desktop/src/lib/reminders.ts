@@ -31,6 +31,11 @@ export function snoozeTomorrow(): string {
   return `${toISO(addDays(new Date(), 1))}T09:00`;
 }
 
+export function reminderFromEvent(e: { id: number; title: string; date: string }) {
+  if (e.date >= toISO(new Date())) return { title: e.title, date: e.date, eventId: e.id };
+  return { title: e.title, date: toISO(addDays(new Date(), 1)), time: "10:00", eventId: e.id };
+}
+
 // День, в котором напоминание фактически всплывает: snooze сдвигает его вперёд.
 export function effectiveDateISO(r: { date: string; snoozed_until: string | null }): string {
   const snoozeDay = r.snoozed_until?.slice(0, 10);

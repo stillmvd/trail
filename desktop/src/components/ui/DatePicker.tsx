@@ -4,7 +4,7 @@ import { ru } from "date-fns/locale";
 import { parseISO, format, addMonths, startOfMonth } from "date-fns";
 import { CalendarDays, ChevronDown, ChevronLeft, ChevronRight, X } from "lucide-react";
 import "react-day-picker/style.css";
-import { formatFullRu } from "@/lib/dates";
+import { formatFullRu, parseTypedDate } from "@/lib/dates";
 import { WheelField } from "./WheelField";
 import { useBack } from "@/lib/back";
 
@@ -115,21 +115,45 @@ export function DatePicker({
   onClear?: () => void;
 }) {
   const [open, setOpen] = useState(defaultOpen);
+  const [typed, setTyped] = useState("");
   const ref = useRef<HTMLDivElement>(null);
   const selected = value ? parseISO(value) : undefined;
+  const [month, setMonth] = useState(selected);
   const minDate = min ? parseISO(min) : undefined;
   const maxDate = max ? parseISO(max) : undefined;
+  const inRange = (iso: string) => (!min || iso >= min) && (!max || iso <= max);
+  const parsed = typed ? parseTypedDate(typed) : null;
+  const typedISO = parsed && inRange(parsed) ? parsed : null;
+  const typedHint = typedISO
+    ? `${formatFullRu(typedISO)} · Enter`
+    : parsed
+      ? "Вне допустимых дат"
+      : "12.10.25 или «вчера»";
 
-  useBack(open, () => setOpen(false));
+  const show = () => {
+    setMonth(selected);
+    setOpen(true);
+  };
+  const close = () => {
+    setOpen(false);
+    setTyped("");
+  };
+  const toggle = () => (open ? close() : show());
+
+  useBack(open, close);
 
   useEffect(() => {
     if (!open) return;
     const onDown = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setOpen(false);
+        setTyped("");
+      }
     };
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== "Escape") return;
       e.stopPropagation();
+      if (typed) return setTyped("");
       setOpen(false);
     };
     document.addEventListener("mousedown", onDown, true);
@@ -138,27 +162,60 @@ export function DatePicker({
       document.removeEventListener("mousedown", onDown, true);
       document.removeEventListener("keydown", onKey, true);
     };
-  }, [open]);
+  }, [open, typed]);
+
+  const onTypeKey = (e: React.KeyboardEvent) => {
+    if (e.ctrlKey || e.metaKey || e.altKey || e.target instanceof HTMLInputElement) return;
+    let next: string;
+    if (e.key === "Enter") {
+      if (!typed) return;
+      e.preventDefault();
+      e.stopPropagation();
+      if (typedISO) {
+        onChange(typedISO);
+        close();
+      }
+      return;
+    }
+    if (e.key === "Backspace") {
+      if (!typed) return;
+      next = typed.slice(0, -1);
+    } else if (e.key.length === 1 && /^[\dа-яё.,/-]$/i.test(e.key)) {
+      next = (typed + e.key).slice(0, 12);
+    } else return;
+    e.preventDefault();
+    e.stopPropagation();
+    setTyped(next);
+    if (!open) setOpen(true);
+    const iso = parseTypedDate(next);
+    if (iso && inRange(iso)) setMonth(parseISO(iso));
+    else if (!open) setMonth(selected);
+  };
 
   const ring = error ? "shadow-[inset_0_0_0_1.5px_var(--ds-danger)]" : "";
 
   return (
     <div className="flex flex-col gap-1">
       {label && <span className="text-xs font-medium text-muted">{label}</span>}
-      <div ref={ref} className="relative">
+      <div ref={ref} className="relative" onKeyDown={onTypeKey}>
         {variant === "tile" ? (
           <button
             type="button"
             aria-haspopup="dialog"
             aria-expanded={open}
-            onClick={() => setOpen((o) => !o)}
+            onClick={toggle}
             className={`flex h-16 w-full cursor-pointer items-center gap-3 px-4 text-left text-app-text outline-none transition-[background-color,box-shadow] duration-150 ease-[var(--rg-ease)] ${
               open ? "bg-surface-active" : "bg-surface-2 hover:bg-surface-3 focus-visible:bg-surface-3"
             } ${
               onClear ? "pr-12" : ""
             } ${ring} ${className}`}
           >
-            {selected ? (
+            {typed ? (
+              <span className="flex min-w-0 flex-col leading-tight">
+                <span className="truncate text-lg font-bold tabular-nums">{typed}</span>
+                <span className="truncate text-xs text-muted">{typedHint}</span>
+              </span>
+            ) : selected ? (
               <>
                 <span className="text-[30px] font-bold leading-none tracking-[-0.03em] tabular-nums">
                   {selected.getDate()}
@@ -171,7 +228,7 @@ export function DatePicker({
                 </span>
               </>
             ) : (
-              <span className="text-sm text-muted">Выберите дату</span>
+              <span className="text-sm text-muted">Выбери дату</span>
             )}
           </button>
         ) : (
@@ -179,15 +236,22 @@ export function DatePicker({
             type="button"
             aria-haspopup="dialog"
             aria-expanded={open}
-            onClick={() => setOpen((o) => !o)}
+            onClick={toggle}
             className={`flex h-11 w-full cursor-pointer items-center gap-2 rounded-full px-4 text-sm text-app-text outline-none transition-colors duration-150 ease-[var(--rg-ease)] ${
               open ? "bg-surface-active" : "bg-surface-2 hover:bg-surface-3 focus-visible:bg-surface-3"
             } ${ring} ${className}`}
           >
             <CalendarDays size={15} className="shrink-0 text-muted" />
-            <span className={`flex-1 truncate text-left ${value ? "" : "text-muted"}`}>
-              {value ? formatFullRu(value) : "Выберите дату"}
-            </span>
+            {typed ? (
+              <span className="flex-1 truncate text-left">
+                <span className="font-semibold tabular-nums">{typed}</span>
+                <span className="text-muted"> — {typedHint}</span>
+              </span>
+            ) : (
+              <span className={`flex-1 truncate text-left ${value ? "" : "text-muted"}`}>
+                {value ? formatFullRu(value) : "Выбери дату"}
+              </span>
+            )}
           </button>
         )}
         {onClear && (
@@ -210,8 +274,9 @@ export function DatePicker({
               mode="single"
               locale={ru}
               hideNavigation
-              selected={selected}
-              defaultMonth={selected}
+              selected={typedISO ? parseISO(typedISO) : selected}
+              month={month}
+              onMonthChange={setMonth}
               startMonth={minDate}
               endMonth={maxDate}
               disabled={[...(minDate ? [{ before: minDate }] : []), ...(maxDate ? [{ after: maxDate }] : [])]}
@@ -221,7 +286,7 @@ export function DatePicker({
               onSelect={(d) => {
                 if (d) {
                   onChange(format(d, "yyyy-MM-dd"));
-                  setOpen(false);
+                  close();
                 }
               }}
             />

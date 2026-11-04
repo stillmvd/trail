@@ -39,6 +39,7 @@ type Anchor = { x: number; y: number };
 
 const START_MONTH = parseISO(BIRTH_DATE);
 const MAX_CHIPS = 3;
+const EVENT_DRAG = "application/x-trail-event";
 
 // Горизонт будущего: «напоминания» можно листать на 15 лет вперёд от сегодня.
 const FUTURE_HORIZON_YEARS = 15;
@@ -137,6 +138,7 @@ type CalCtx = {
   onMarkOpen: (iso: string) => void;
   onMarkMenu: (mark: Mark, x: number, y: number) => void;
   onPersonOpen: (person: Person) => void;
+  onEventMove: (eventId: number, iso: string) => void;
   displayMonth: Date;
   onShift: (unit: "month" | "year", delta: number) => void;
   onToday: () => void;
@@ -154,6 +156,7 @@ const CalendarContext = createContext<CalCtx>({
   onMarkOpen: () => {},
   onMarkMenu: () => {},
   onPersonOpen: () => {},
+  onEventMove: () => {},
   displayMonth: new Date(0),
   onShift: () => {},
   onToday: () => {},
@@ -180,8 +183,10 @@ function DayCell({ day, modifiers, className, ...rest }: DayProps) {
     onMarkOpen,
     onMarkMenu,
     onPersonOpen,
+    onEventMove,
     dayKind,
   } = useContext(CalendarContext);
+  const [dropOver, setDropOver] = useState(false);
   const dayEvents = modifiers.disabled ? [] : dayIndex.get(day.isoDate) ?? [];
   const dayMarks = modifiers.disabled ? [] : markIndex.get(day.isoDate) ?? [];
   const dayBirthdays = modifiers.disabled ? [] : birthdayIndex.get(day.isoDate.slice(5)) ?? [];
@@ -203,8 +208,26 @@ function DayCell({ day, modifiers, className, ...rest }: DayProps) {
                   ? onDayOpen(day.isoDate)
                   : onCreateAt(day.isoDate, anchorFrom(e))
         }
+        onDragOver={
+          modifiers.disabled
+            ? undefined
+            : (e) => {
+                if (!e.dataTransfer.types.includes(EVENT_DRAG)) return;
+                e.preventDefault();
+                e.dataTransfer.dropEffect = "move";
+                setDropOver(true);
+              }
+        }
+        onDragLeave={(e) => !e.currentTarget.contains(e.relatedTarget as Node) && setDropOver(false)}
+        onDrop={(e) => {
+          setDropOver(false);
+          const id = Number(e.dataTransfer.getData(EVENT_DRAG));
+          if (!id) return;
+          e.preventDefault();
+          onEventMove(id, day.isoDate);
+        }}
         title={holiday ?? undefined}
-        className={`tl-cal-cell${modifiers.today ? " is-today" : ""}${
+        className={`tl-cal-cell${dropOver ? " is-drop" : ""}${modifiers.today ? " is-today" : ""}${
           modifiers.disabled ? " is-disabled" : ""
         }${kind ? ` is-${kind}` : ""}`}
       >
@@ -271,6 +294,11 @@ function DayCell({ day, modifiers, className, ...rest }: DayProps) {
                   className="tl-cal-chip"
                   style={{ background: "var(--ds-surface-1)" }}
                   title={e.title}
+                  draggable
+                  onDragStart={(ev) => {
+                    ev.dataTransfer.setData(EVENT_DRAG, String(e.id));
+                    ev.dataTransfer.effectAllowed = "move";
+                  }}
                   {...eventSurface(e.id)}
                   onClick={(ev) => {
                     ev.stopPropagation();
@@ -347,6 +375,7 @@ export function CalendarView({
   onMarkOpen = () => {},
   onMarkMenu = () => {},
   onPersonOpen = () => {},
+  onEventMove = () => {},
 }: {
   events: TimelineEvent[];
   marks?: Mark[];
@@ -359,6 +388,7 @@ export function CalendarView({
   onMarkOpen?: (dateISO: string) => void;
   onMarkMenu?: (mark: Mark, x: number, y: number) => void;
   onPersonOpen?: (person: Person) => void;
+  onEventMove?: (eventId: number, iso: string) => void;
 }) {
   const today = useMemo(() => new Date(), []);
   // Верхняя граница навигации/создания: сегодня + горизонт будущего.
@@ -438,6 +468,7 @@ export function CalendarView({
       onMarkOpen,
       onMarkMenu,
       onPersonOpen,
+      onEventMove,
       displayMonth: month,
       onShift: handleShift,
       onToday: handleToday,
@@ -454,6 +485,7 @@ export function CalendarView({
       onMarkOpen,
       onMarkMenu,
       onPersonOpen,
+      onEventMove,
       month,
       handleShift,
       handleToday,
