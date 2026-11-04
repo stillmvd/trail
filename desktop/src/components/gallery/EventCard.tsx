@@ -1,3 +1,5 @@
+import { eventSurface } from "@/components/events/useEventSurface";
+import { DropHint } from "@/components/ui/DropHint";
 import { createElement } from "react";
 import { ArrowUpRight, CalendarClock } from "lucide-react";
 import { formatFullRu, formatDayMonthRu } from "@/lib/dates";
@@ -37,6 +39,7 @@ export function EventCard({
       style={{ boxShadow: ELEVATION_1 }}
       onMouseEnter={(e) => (e.currentTarget.style.boxShadow = ELEVATION_2)}
       onMouseLeave={(e) => (e.currentTarget.style.boxShadow = ELEVATION_1)}
+      {...eventSurface(event.id)}
     >
       <span
         aria-hidden
@@ -44,6 +47,7 @@ export function EventCard({
       />
 
       <div className="relative aspect-[4/3] w-full overflow-hidden">
+        <DropHint />
         {event.cover ? (
           <MediaImg
             path={event.cover}

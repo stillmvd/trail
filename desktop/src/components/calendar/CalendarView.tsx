@@ -1,3 +1,4 @@
+import { eventSurface } from "@/components/events/useEventSurface";
 import {
   createContext,
   createElement,
@@ -270,6 +271,7 @@ function DayCell({ day, modifiers, className, ...rest }: DayProps) {
                   className="tl-cal-chip"
                   style={{ background: "var(--ds-surface-1)" }}
                   title={e.title}
+                  {...eventSurface(e.id)}
                   onClick={(ev) => {
                     ev.stopPropagation();
                     onEventOpen(e);

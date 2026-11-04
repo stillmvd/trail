@@ -1,3 +1,4 @@
+import { eventSurface } from "@/components/events/useEventSurface";
 import { createElement, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import type { Viewport } from "@/lib/projection";
@@ -117,6 +118,7 @@ export function PeriodLayer({
               onPointerDown={(e: React.PointerEvent) => e.stopPropagation()}
               onPointerUp={(e: React.PointerEvent) => e.stopPropagation()}
               onClick={() => onEventClick?.(bar.ev)}
+              {...eventSurface(bar.ev.id)}
             >
               {showLabel && (
                 <span

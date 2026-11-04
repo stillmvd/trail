@@ -1,3 +1,5 @@
+import { eventSurface } from "@/components/events/useEventSurface";
+import { DropHint } from "@/components/ui/DropHint";
 import { createElement } from "react";
 import { ArrowUpRight } from "lucide-react";
 import { formatFullRu } from "@/lib/dates";
@@ -63,6 +65,7 @@ export function TrackingCard({
       style={{ boxShadow: ELEVATION_1 }}
       onMouseEnter={(e) => (e.currentTarget.style.boxShadow = ELEVATION_2)}
       onMouseLeave={(e) => (e.currentTarget.style.boxShadow = ELEVATION_1)}
+      {...eventSurface(event.id)}
     >
       <span
         aria-hidden
@@ -70,6 +73,7 @@ export function TrackingCard({
       />
 
       <div className="relative aspect-video w-full overflow-hidden rounded-b-4xl">
+        <DropHint />
         {event.cover ? (
           <MediaImg path={event.cover} className="h-full w-full object-cover" />
         ) : (

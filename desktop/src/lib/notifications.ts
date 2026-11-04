@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
+import { getCurrentWindow } from "@tauri-apps/api/window";
 import {
   isPermissionGranted,
   requestPermission,
@@ -41,7 +42,7 @@ const REMINDER_BUTTONS: ToastButton[] = [
 // Родной WinRT-тост несёт кнопки и клик, плагин — нет. Если WinRT недоступен,
 // падаем на плагин: лучше тост без действий, чем тишина.
 export async function winToast(
-  kind: "reminder" | "birthday" | "digest",
+  kind: "reminder" | "birthday" | "digest" | "imagegen",
   id: number,
   title: string,
   body?: string,
@@ -51,6 +52,15 @@ export async function winToast(
     await invoke("notify", { kind, id, title, body: body ?? null, buttons });
   } catch {
     if (await ensurePermission()) sendNotification({ title, body });
+  }
+}
+
+export async function windowFocused(): Promise<boolean> {
+  try {
+    const win = getCurrentWindow();
+    return (await win.isVisible()) && !(await win.isMinimized()) && (await win.isFocused());
+  } catch {
+    return document.hasFocus();
   }
 }
 

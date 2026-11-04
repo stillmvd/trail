@@ -121,6 +121,7 @@ export function EventSheet({
           <EventForm
             key={`edit-${state.event.id}`}
             mode="edit"
+            eventId={state.event.id}
             categories={categories}
             initialMedia={state.media}
             initial={

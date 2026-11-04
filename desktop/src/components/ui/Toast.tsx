@@ -10,6 +10,7 @@ import {
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "motion/react";
 import { CheckCircle2, AlertCircle, Info, X } from "lucide-react";
+import { SHEET_WIDTH, useAnySheetOpen } from "./SideSheet";
 
 type ToastType = "success" | "error" | "info";
 
@@ -33,6 +34,7 @@ const META: Record<ToastType, { icon: typeof Info; color: string }> = {
 
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<ToastItem[]>([]);
+  const sheetOpen = useAnySheetOpen();
   const idRef = useRef(0);
 
   const show = useCallback((message: string, type: ToastType = "info") => {
@@ -49,7 +51,12 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     <ToastContext.Provider value={value}>
       {children}
       {createPortal(
-        <div className="pointer-events-none fixed bottom-6 right-6 z-[100] flex flex-col gap-2">
+        <motion.div
+          className="pointer-events-none fixed bottom-6 z-[100] flex flex-col items-end gap-2"
+          initial={false}
+          animate={{ right: sheetOpen ? SHEET_WIDTH + 24 : 24 }}
+          transition={{ type: "spring", duration: 0.3, bounce: 0 }}
+        >
           <AnimatePresence>
             {toasts.map((t) => {
               const Icon = META[t.type].icon;
@@ -85,7 +92,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
               );
             })}
           </AnimatePresence>
-        </div>,
+        </motion.div>,
         document.body,
       )}
     </ToastContext.Provider>

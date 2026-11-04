@@ -14,6 +14,7 @@ import { tooltip } from "@/components/ui/Tooltip";
 import { resolveIconOrNull } from "@/lib/icons";
 import { CategoryPicker } from "./CategoryPicker";
 import { ImageGenDialog } from "./ImageGenDialog";
+import { useEvents } from "@/components/events/EventsProvider";
 import { SignificancePicker } from "./SignificancePicker";
 
 export interface EventFormValues {
@@ -42,6 +43,7 @@ interface EventFormProps {
   categories: CategoryNode[];
   initial?: Partial<EventFormValues>;
   initialMedia?: EventMedia[];
+  eventId?: number;
   mode?: "create" | "edit";
   submitting?: boolean;
   onSubmit: (payload: EventFormPayload) => void;
@@ -53,12 +55,14 @@ export function EventForm({
   categories,
   initial,
   initialMedia,
+  eventId,
   mode = "create",
   submitting = false,
   onSubmit,
   onCancel,
   onDelete,
 }: EventFormProps) {
+  const { savePhoto } = useEvents();
   const [title, setTitle] = useState(initial?.title ?? "");
   const [description, setDescription] = useState(initial?.description ?? "");
   const [date, setDate] = useState(initial?.date ?? todayISO());
@@ -81,6 +85,29 @@ export function EventForm({
   const selectedSub = selectedCategory?.children.find((c) => c.id === subcategoryId) ?? null;
   const categoryLabel = [selectedCategory?.name, selectedSub?.name].filter(Boolean).join(" › ");
   const CategoryIcon = resolveIconOrNull(selectedSub?.icon ?? selectedCategory?.icon);
+
+  const fieldsChanged =
+    title !== (initial?.title ?? "") ||
+    description !== (initial?.description ?? "") ||
+    date !== (initial?.date ?? date) ||
+    endDate !== (initial?.endDate ?? "") ||
+    significance !== (initial?.significance ?? 1) ||
+    categoryId !== (initial?.categoryId ?? null) ||
+    subcategoryId !== (initial?.subcategoryId ?? null) ||
+    track !== (initial?.track ?? false);
+
+  async function applyGenerated(file: File) {
+    if (eventId === undefined) {
+      photo.pick([file]);
+      return true;
+    }
+    const path = await savePhoto(eventId, file);
+    if (!path) return false;
+    photo.commit(path);
+    if (!fieldsChanged) onCancel();
+    return true;
+  }
+
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     let valid = true;
@@ -199,8 +226,9 @@ export function EventForm({
       <ImageGenDialog
         open={generatorOpen}
         subject={{ title, note: description, category: categoryLabel, currentSrc: photo.src }}
+        applyLabel={eventId === undefined ? "Готово" : photo.src ? "Заменить фото" : "Сохранить"}
         onClose={() => setGeneratorOpen(false)}
-        onApply={(file) => photo.pick([file])}
+        onApply={applyGenerated}
       />
 
       <div className="grid grid-cols-2 gap-0.5">

@@ -16,7 +16,10 @@ export interface ImageStyle {
   id: string;
   label: string;
   prompt: string;
+  trimFrame?: boolean;
 }
+
+const FULL_BLEED = "Full-bleed artwork that runs to every edge of the canvas: no border, no frame, no panel outline, no margin.";
 
 export const IMAGE_STYLES: ImageStyle[] = [
   {
@@ -37,12 +40,14 @@ export const IMAGE_STYLES: ImageStyle[] = [
   {
     id: "poster",
     label: "Постер",
-    prompt: "Vintage 1970s illustrated poster, flat gouache shapes, sunburst light, warm retro palette of orange, teal and mustard, subtle paper texture.",
+    prompt: `Vintage 1970s illustrated poster, flat gouache shapes, sunburst light, warm retro palette of orange, teal and mustard, subtle paper texture. ${FULL_BLEED}`,
+    trimFrame: true,
   },
   {
     id: "comic",
     label: "Комикс",
-    prompt: "Graphic novel panel, bold black ink outlines, flat vivid colors, halftone shading, dynamic camera angle, exaggerated expressive characters.",
+    prompt: `Graphic novel illustration, bold black ink outlines, flat vivid colors, halftone shading, dynamic camera angle, exaggerated expressive characters. ${FULL_BLEED}`,
+    trimFrame: true,
   },
   {
     id: "watercolor",
@@ -126,7 +131,71 @@ export async function renderImage(
   onStatus?: (message: string) => void,
 ): Promise<File> {
   const style = IMAGE_STYLES.find((s) => s.id === styleId) ?? IMAGE_STYLES[0];
-  const prompt = `${scene}\n\n${await stylePrompt(style)} ${NO_TEXT}`;
+  const file = await drawImage(`${scene}\n\n${await stylePrompt(style)} ${NO_TEXT}`, onStatus);
+  return style.trimFrame ? trimFrame(file).catch(() => file) : file;
+}
+
+const FRAME_SCAN = 0.1;
+const FRAME_STD = 16;
+
+function lineStd(px: Uint8ClampedArray, w: number, h: number, vertical: boolean, at: number): number {
+  const len = vertical ? h : w;
+  const from = Math.floor(len * 0.15);
+  const to = Math.ceil(len * 0.85);
+  let sum = 0;
+  let sq = 0;
+  let n = 0;
+  for (let i = from; i < to; i += 2) {
+    const o = ((vertical ? i : at) * w + (vertical ? at : i)) * 4;
+    const y = 0.2126 * px[o] + 0.7152 * px[o + 1] + 0.0722 * px[o + 2];
+    sum += y;
+    sq += y * y;
+    n++;
+  }
+  const mean = sum / n;
+  return Math.sqrt(Math.max(0, sq / n - mean * mean));
+}
+
+async function trimFrame(file: File): Promise<File> {
+  const bitmap = await createImageBitmap(file);
+  const { width: w, height: h } = bitmap;
+  const src = new OffscreenCanvas(w, h);
+  const sctx = src.getContext("2d")!;
+  sctx.drawImage(bitmap, 0, 0);
+  const px = sctx.getImageData(0, 0, w, h).data;
+  const edge = (vertical: boolean, start: number, step: number, limit: number) => {
+    let i = 0;
+    while (i < limit && lineStd(px, w, h, vertical, start + i * step) < FRAME_STD) i++;
+    return i;
+  };
+  const top = edge(false, 0, 1, Math.round(h * FRAME_SCAN));
+  const bottom = edge(false, h - 1, -1, Math.round(h * FRAME_SCAN));
+  const left = edge(true, 0, 1, Math.round(w * FRAME_SCAN));
+  const right = edge(true, w - 1, -1, Math.round(w * FRAME_SCAN));
+  const hitLimit = top >= Math.round(h * FRAME_SCAN) || bottom >= Math.round(h * FRAME_SCAN) || left >= Math.round(w * FRAME_SCAN) || right >= Math.round(w * FRAME_SCAN);
+  if (Math.min(top, bottom, left, right) < 3 || hitLimit) return file;
+  const pad = 2;
+  let cx = left + pad;
+  let cy = top + pad;
+  let cw = w - left - right - pad * 2;
+  let ch = h - top - bottom - pad * 2;
+  const ratio = w / h;
+  if (cw / ch > ratio) {
+    const nw = ch * ratio;
+    cx += (cw - nw) / 2;
+    cw = nw;
+  } else {
+    const nh = cw / ratio;
+    cy += (ch - nh) / 2;
+    ch = nh;
+  }
+  const out = new OffscreenCanvas(w, h);
+  out.getContext("2d")!.drawImage(bitmap, cx, cy, cw, ch, 0, 0, w, h);
+  const blob = await out.convertToBlob({ type: "image/png" });
+  return new File([blob], file.name, { type: "image/png" });
+}
+
+async function drawImage(prompt: string, onStatus?: (message: string) => void): Promise<File> {
   const provider = imageProviderStore.get();
   if (provider === "cloudflare") return generateCloudflare(prompt);
   if (provider === "openrouter") return generateOpenRouter(prompt);
@@ -152,6 +221,12 @@ export async function comfyState(): Promise<EngineState> {
 
 export function startComfy(onStatus?: (message: string) => void): Promise<void> {
   return ensureComfy(comfyBase(), onStatus);
+}
+
+export async function stopComfy(): Promise<void> {
+  await invoke("comfy_stop", { dir: comfyDirStore.get().trim() });
+  const deadline = Date.now() + 10_000;
+  while (Date.now() < deadline && (await comfyAlive(comfyBase()))) await new Promise((r) => setTimeout(r, 500));
 }
 
 export async function releaseImageModels(): Promise<void> {

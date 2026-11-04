@@ -3,6 +3,8 @@ import { AnimatePresence, motion } from "motion/react";
 import { ImagePlus, X } from "lucide-react";
 import { filterAcceptedImages, ACCEPTED_IMAGE_TYPES } from "@/lib/media";
 import { mediaSrc } from "@/lib/paths";
+import { imageFromDrop } from "@/lib/imageDrop";
+import { useToast } from "./Toast";
 
 export type PhotoChange = { kind: "keep" } | { kind: "set"; file: File } | { kind: "remove" };
 
@@ -36,6 +38,15 @@ export function usePhotoState(initialPath?: string | null) {
     setExisting(null);
   }, []);
 
+  const commit = useCallback((path: string) => {
+    setPendingFile(null);
+    setPendingUrl((prev) => {
+      if (prev) URL.revokeObjectURL(prev);
+      return null;
+    });
+    setExisting(path);
+  }, []);
+
   const change = useCallback((): PhotoChange => {
     if (pendingFile) return { kind: "set", file: pendingFile };
     if (!existing && initialPath) return { kind: "remove" };
@@ -46,6 +57,7 @@ export function usePhotoState(initialPath?: string | null) {
     src: pendingUrl ?? (existing ? mediaSrc(existing) : null),
     pick,
     clear,
+    commit,
     change,
   };
 }
@@ -63,6 +75,7 @@ export function PhotoPicker({
 }) {
   const [hover, setHover] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const { show } = useToast();
 
   useEffect(() => {
     function handlePaste(e: ClipboardEvent) {
@@ -96,7 +109,10 @@ export function PhotoPicker({
         onDrop={(e) => {
           e.preventDefault();
           setHover(false);
-          onPick(e.dataTransfer.files);
+          void imageFromDrop(e.dataTransfer).then(
+            (file) => file && onPick([file]),
+            (err) => show(`Не удалось загрузить картинку: ${err instanceof Error ? err.message : String(err)}`, "error"),
+          );
         }}
         whileTap={{ scale: 0.98 }}
         className="relative flex aspect-video w-full cursor-pointer items-center justify-center overflow-hidden rounded-3xl"

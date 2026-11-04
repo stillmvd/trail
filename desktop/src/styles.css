@@ -665,3 +665,54 @@ h2 {
     animation: none;
   }
 }
+
+.comfy-dots {
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(circle, var(--tone) 1.6px, transparent 2px);
+  background-size: 12px 12px;
+  background-position: 6px 6px;
+  mask-image: radial-gradient(ellipse 62% 75% at center, #000 0%, rgb(0 0 0 / 6%) 100%);
+  transition: opacity 300ms var(--rg-ease);
+}
+
+.comfy-dots-pulse {
+  animation: comfy-pulse 1.4s var(--rg-ease) infinite;
+}
+
+@keyframes comfy-pulse {
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .comfy-dots-pulse {
+    animation: none;
+  }
+}
+
+.drop-hint {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+  color: var(--rg-text);
+  background: color-mix(in oklch, var(--rg-bg) 62%, transparent);
+  opacity: 0;
+  transition: opacity 150ms var(--rg-ease);
+}
+
+[data-drop-over] .drop-hint {
+  opacity: 1;
+}
+
+[data-drop-over]:not(:has(.drop-hint)) {
+  filter: brightness(1.25) saturate(1.15);
+}

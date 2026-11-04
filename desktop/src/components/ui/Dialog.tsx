@@ -1,8 +1,16 @@
-import { useEffect, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "motion/react";
 import { X } from "lucide-react";
 import { useBack } from "@/lib/back";
+
+const NUDGE: Keyframe[] = [
+  { translate: "0 0" },
+  { translate: "-6px 0" },
+  { translate: "6px 0" },
+  { translate: "-3px 0" },
+  { translate: "0 0" },
+];
 
 export function Dialog({
   open,
@@ -10,6 +18,8 @@ export function Dialog({
   title,
   width = 460,
   zIndex = 90,
+  canDismiss,
+  escapeCapture = false,
   children,
 }: {
   open: boolean;
@@ -17,16 +27,31 @@ export function Dialog({
   title?: ReactNode;
   width?: number;
   zIndex?: number;
+  canDismiss?: () => boolean;
+  escapeCapture?: boolean;
   children: ReactNode;
 }) {
-  useBack(open, onClose);
+  const panel = useRef<HTMLDivElement>(null);
+  const onDismiss = useCallback(() => {
+    if (!canDismiss || canDismiss()) return onClose();
+    if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      panel.current?.animate(NUDGE, { duration: 280, easing: "ease-out" });
+    }
+  }, [canDismiss, onClose]);
+
+  useBack(open, onDismiss);
 
   useEffect(() => {
     if (!open) return;
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
-    document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
-  }, [open, onClose]);
+    const target = escapeCapture ? window : document;
+    const onKey = (e: Event) => {
+      if ((e as KeyboardEvent).key !== "Escape") return;
+      if (escapeCapture) e.stopPropagation();
+      onDismiss();
+    };
+    target.addEventListener("keydown", onKey, escapeCapture);
+    return () => target.removeEventListener("keydown", onKey, escapeCapture);
+  }, [open, onDismiss, escapeCapture]);
 
   return createPortal(
     <AnimatePresence>
@@ -38,9 +63,10 @@ export function Dialog({
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.15 }}
-          onMouseDown={onClose}
+          onMouseDown={onDismiss}
         >
           <motion.div
+            ref={panel}
             role="dialog"
             aria-modal="true"
             className="flex max-h-[85vh] w-full flex-col overflow-hidden rounded-4xl bg-surface-1 text-app-text shadow-2xl"

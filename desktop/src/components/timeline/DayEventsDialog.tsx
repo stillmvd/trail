@@ -1,7 +1,8 @@
-import { createElement, useEffect, useState } from "react";
+import { eventSurface } from "@/components/events/useEventSurface";
+import { createElement, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "motion/react";
-import { Pencil, Trash2, Plus, X } from "lucide-react";
+import { Trash2, Plus, X } from "lucide-react";
 import { formatFullRu, formatDayMonthRu } from "@/lib/dates";
 import { getSignificanceMeta } from "@/lib/significance";
 import { eventAccent } from "@/lib/accent";
@@ -9,7 +10,6 @@ import { resolveIconOrNull } from "@/lib/icons";
 import { Button } from "@/components/ui/Button";
 import { MetricChip } from "@/components/ui/MetricChip";
 import { SignificanceIcon } from "@/components/ui/SignificanceIcon";
-import { ContextMenu } from "@/components/ui/ContextMenu";
 import { CoverPlaceholder } from "@/components/ui/CoverPlaceholder";
 import type { TimelineEvent } from "@/db/queries/events";
 import type { Mark } from "@/db/queries/marks";
@@ -23,8 +23,6 @@ interface DayEventsDialogProps {
   events: TimelineEvent[];
   marks: Mark[];
   onView: (event: TimelineEvent) => void;
-  onEdit: (event: TimelineEvent) => void;
-  onDelete: (event: TimelineEvent) => void;
   onDeleteMark: (mark: Mark) => void;
   onCreate: (dateISO: string) => void;
   onClose: () => void;
@@ -44,14 +42,10 @@ export function DayEventsDialog({
   events,
   marks,
   onView,
-  onEdit,
-  onDelete,
   onDeleteMark,
   onCreate,
   onClose,
 }: DayEventsDialogProps) {
-  const [menu, setMenu] = useState<{ event: TimelineEvent; x: number; y: number } | null>(null);
-
   const periods = events.filter(isPeriod);
   const moments = events.filter((e) => !isPeriod(e));
   const total = events.length + marks.length;
@@ -123,7 +117,6 @@ export function DayEventsDialog({
                   key={event.id}
                   event={event}
                   onView={() => onView(event)}
-                  onContextMenu={(x, y) => setMenu({ event, x, y })}
                 />
               ))}
               {showLabels && moments.length > 0 && <GroupLabel label="События" />}
@@ -132,7 +125,6 @@ export function DayEventsDialog({
                   key={event.id}
                   event={event}
                   onView={() => onView(event)}
-                  onContextMenu={(x, y) => setMenu({ event, x, y })}
                 />
               ))}
               {showLabels && marks.length > 0 && <GroupLabel label="Отметки" />}
@@ -149,29 +141,6 @@ export function DayEventsDialog({
             </div>
           </motion.div>
 
-          <ContextMenu
-            open={menu !== null}
-            x={menu?.x ?? 0}
-            y={menu?.y ?? 0}
-            onClose={() => setMenu(null)}
-            items={
-              menu
-                ? [
-                    {
-                      label: "Редактировать",
-                      icon: <Pencil size={16} strokeWidth={1.75} />,
-                      onSelect: () => onEdit(menu.event),
-                    },
-                    {
-                      label: "Удалить",
-                      icon: <Trash2 size={16} strokeWidth={1.75} />,
-                      danger: true,
-                      onSelect: () => onDelete(menu.event),
-                    },
-                  ]
-                : []
-            }
-          />
         </motion.div>
       )}
     </AnimatePresence>,
@@ -182,11 +151,9 @@ export function DayEventsDialog({
 function EventRow({
   event,
   onView,
-  onContextMenu,
 }: {
   event: TimelineEvent;
   onView: () => void;
-  onContextMenu: (x: number, y: number) => void;
 }) {
   const accent = eventAccent(event);
   const sig = getSignificanceMeta(event.significance);
@@ -196,10 +163,7 @@ function EventRow({
     <button
       type="button"
       onClick={onView}
-      onContextMenu={(e) => {
-        e.preventDefault();
-        onContextMenu(e.clientX, e.clientY);
-      }}
+      {...eventSurface(event.id)}
       className="group flex cursor-pointer items-center gap-3.5 rounded-3xl p-2.5 text-left transition-colors hover:bg-surface-2"
     >
       {event.cover ? (

@@ -1,10 +1,22 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, useSyncExternalStore, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "motion/react";
 import { X } from "lucide-react";
 import { useBack } from "@/lib/back";
 
-const SHEET_WIDTH = 430;
+export const SHEET_WIDTH = 430;
+
+let openSheets = 0;
+const sheetListeners = new Set<() => void>();
+const emitSheets = () => sheetListeners.forEach((l) => l());
+const subscribeSheets = (l: () => void) => {
+  sheetListeners.add(l);
+  return () => sheetListeners.delete(l);
+};
+
+export function useAnySheetOpen() {
+  return useSyncExternalStore(subscribeSheets, () => openSheets > 0);
+}
 
 const HeaderSlotContext = createContext<HTMLElement | null>(null);
 const OverlayContext = createContext<HTMLElement | null>(null);
@@ -32,6 +44,16 @@ export function SideSheet({
   const [slot, setSlot] = useState<HTMLElement | null>(null);
   const [overlay, setOverlay] = useState<HTMLElement | null>(null);
   useBack(open, onClose);
+
+  useEffect(() => {
+    if (!open) return;
+    openSheets += 1;
+    emitSheets();
+    return () => {
+      openSheets -= 1;
+      emitSheets();
+    };
+  }, [open]);
 
   useEffect(() => {
     if (!open) return;

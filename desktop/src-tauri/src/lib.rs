@@ -562,6 +562,25 @@ fn comfy_running(state: tauri::State<Comfy>) -> bool {
         .unwrap_or(false)
 }
 
+#[tauri::command]
+fn comfy_stop(state: tauri::State<Comfy>, dir: String) -> Result<(), String> {
+    comfy_kill(&state);
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+        let needle = dir.replace('\\', "/").replace('\'', "''").to_lowercase();
+        let script = format!(
+            "Get-CimInstance Win32_Process -Filter \"Name='python.exe'\" | Where-Object {{ $_.CommandLine -and $_.CommandLine.Replace('\\','/').ToLower() -like '*{needle}*main.py*' }} | ForEach-Object {{ Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }}"
+        );
+        std::process::Command::new("powershell")
+            .args(["-NoProfile", "-NonInteractive", "-Command", &script])
+            .creation_flags(0x0800_0000)
+            .status()
+            .map_err(|e| e.to_string())?;
+    }
+    Ok(())
+}
+
 fn comfy_kill(state: &Comfy) {
     if let Ok(mut slot) = state.0.lock() {
         if let Some(mut child) = slot.take() {
@@ -616,6 +635,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             comfy_start,
             comfy_running,
+            comfy_stop,
             save_media,
             delete_media,
             list_media_thumbs,

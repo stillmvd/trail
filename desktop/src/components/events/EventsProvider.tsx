@@ -1,10 +1,19 @@
 import { createContext, useCallback, useContext, useMemo, useRef, useState, type ReactNode } from "react";
-import { Trash2 } from "lucide-react";
+import { Bell, Pencil, Sparkles, Target, Trash2 } from "lucide-react";
 import { useToast } from "@/components/ui/Toast";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
-import { ContextMenu } from "@/components/ui/ContextMenu";
-import { EventSheet, type EventSheetState } from "@/components/timeline/EventSheet";
+import { ContextMenu, type ContextMenuItem } from "@/components/ui/ContextMenu";
+import { EventSheet, splitCategory, type EventSheetState } from "@/components/timeline/EventSheet";
 import { DayEventsDialog } from "@/components/timeline/DayEventsDialog";
+import { ImageGenDialog } from "@/components/timeline/ImageGenDialog";
+import { useReminders } from "./RemindersProvider";
+import { useEventSurface } from "./useEventSurface";
+import { mediaSrc } from "@/lib/paths";
+import { formatDayMonthRu, formatFullRu } from "@/lib/dates";
+import type { CategoryNode } from "@/db/queries/categories";
+
+const eventDateLabel = (e: TimelineEvent) =>
+  e.end_date ? `${formatDayMonthRu(e.date)} ↔ ${formatFullRu(e.end_date)}` : formatFullRu(e.date);
 import type { EventFormPayload } from "@/components/timeline/EventForm";
 import type { MarkFormPayload } from "@/components/timeline/MarkForm";
 import { useQuery, getQueryData, setQueryData } from "@/lib/useQuery";
@@ -19,6 +28,7 @@ import {
   createEvent,
   updateEvent,
   deleteEvent,
+  getEvent,
   getEventsInRange,
 } from "@/db/queries/events";
 import { listMediaByEvent, addMedia, deleteMedia } from "@/db/queries/media";
@@ -36,6 +46,7 @@ type EventsCtx = {
   openView: (event: TimelineEvent) => void;
   openDay: (dateISO: string) => void;
   openMarkMenu: (mark: Mark, x: number, y: number) => void;
+  savePhoto: (eventId: number, file: File) => Promise<string | null>;
 };
 
 const Context = createContext<EventsCtx | null>(null);
@@ -68,13 +79,50 @@ const eventInput = (p: EventFormPayload) => ({
   track: p.track ? 1 : 0,
 });
 
-async function finalizePhoto(eventId: number, photo: EventFormPayload["photo"]) {
-  if (photo.kind === "keep") return;
-  for (const m of await listMediaByEvent(eventId)) {
-    const path = await deleteMedia(m.id);
-    if (path) await deleteMediaFile(path);
+async function finalizePhoto(eventId: number, photo: EventFormPayload["photo"]): Promise<string | null> {
+  if (photo.kind === "keep") return null;
+  const old = await listMediaByEvent(eventId);
+  const next = photo.kind === "set" ? await writeMediaFile(photo.file) : null;
+  if (next) {
+    try {
+      await addMedia(eventId, next);
+    } catch (e) {
+      await deleteMediaFile(next).catch(() => undefined);
+      throw e;
+    }
   }
-  if (photo.kind === "set") await addMedia(eventId, await writeMediaFile(photo.file));
+  for (const m of old) {
+    const path = await deleteMedia(m.id).catch(() => null);
+    if (path) await deleteMediaFile(path).catch(() => undefined);
+  }
+  return next;
+}
+
+const photoQueue = new Map<number, Promise<unknown>>();
+
+function queuePhoto<T>(eventId: number, task: () => Promise<T>): Promise<T> {
+  const run = (photoQueue.get(eventId) ?? Promise.resolve()).then(task, task);
+  const tail = run.catch(() => undefined);
+  photoQueue.set(eventId, tail);
+  void tail.then(() => photoQueue.get(eventId) === tail && photoQueue.delete(eventId));
+  return run;
+}
+
+const quickInput = (e: TimelineEvent) => ({
+  title: e.title,
+  description: e.description,
+  date: e.date,
+  endDate: e.end_date,
+  significance: e.significance,
+  categoryId: e.category_id,
+  track: e.track,
+});
+
+function categoryPath(categories: CategoryNode[], id: number | null): string {
+  const { categoryId, subcategoryId } = splitCategory(categories, id);
+  const parent = categories.find((c) => c.id === categoryId);
+  const sub = parent?.children.find((c) => c.id === subcategoryId);
+  return [parent?.name, sub?.name].filter(Boolean).join(" › ");
 }
 
 export function EventsProvider({ children }: { children: ReactNode }) {
@@ -154,7 +202,7 @@ export function EventsProvider({ children }: { children: ReactNode }) {
         const id = await createEvent(eventInput(p));
         setSheet(null);
         try {
-          await finalizePhoto(id, p.photo);
+          await queuePhoto(id, () => finalizePhoto(id, p.photo));
         } catch (e) {
           bumpDataVersion();
           return show(`Событие создано, но фото не сохранено: ${String(e)}`, "error");
@@ -180,7 +228,7 @@ export function EventsProvider({ children }: { children: ReactNode }) {
         await updateEvent(id, eventInput(p));
         setSheet(null);
         try {
-          await finalizePhoto(id, p.photo);
+          await queuePhoto(id, () => finalizePhoto(id, p.photo));
         } catch (e) {
           bumpDataVersion();
           return show(`Изменения сохранены, но фото не обновлено: ${String(e)}`, "error");
@@ -268,9 +316,108 @@ export function EventsProvider({ children }: { children: ReactNode }) {
     setMarkMenu({ mark, x, y });
   }, []);
 
+  const patchDay = useCallback(
+    (eventId: number, patch: Partial<TimelineEvent>) =>
+      setDay((d) => d && { ...d, events: d.events.map((e) => (e.id === eventId ? { ...e, ...patch } : e)) }),
+    [],
+  );
+
+  const savePhoto = useCallback(
+    async (eventId: number, file: File) => {
+      try {
+        const path = await queuePhoto(eventId, () => finalizePhoto(eventId, { kind: "set", file }));
+        bumpDataVersion();
+        const media = await listMediaByEvent(eventId);
+        setSheet((s) =>
+          s?.mode === "view" && s.event.id === eventId ? { ...s, media, event: { ...s.event, cover: path } } : s,
+        );
+        patchDay(eventId, { cover: path });
+        show("Картинка сохранена", "success");
+        return path;
+      } catch (e) {
+        show(`Не удалось сохранить картинку: ${String(e)}`, "error");
+        return null;
+      }
+    },
+    [show, patchDay],
+  );
+
+  const { openCreateReminder } = useReminders();
+  const [eventMenu, setEventMenu] = useState<{ event: TimelineEvent; x: number; y: number } | null>(null);
+  const [genEvent, setGenEvent] = useState<TimelineEvent | null>(null);
+  const menuTicket = useRef(0);
+
+  const quickUpdate = useCallback(
+    async (event: TimelineEvent, patch: Partial<TimelineEvent>, done: string) => {
+      try {
+        const fresh = (await getEvent(event.id)) ?? event;
+        await updateEvent(event.id, quickInput({ ...fresh, ...patch }));
+        bumpDataVersion();
+        patchDay(event.id, patch);
+        setSheet((s) => (s?.mode === "view" && s.event.id === event.id ? { ...s, event: { ...s.event, ...patch } } : s));
+        show(done, "success");
+      } catch (e) {
+        show(`Не удалось сохранить: ${String(e)}`, "error");
+      }
+    },
+    [show, patchDay],
+  );
+
+  useEventSurface({
+    onMenu: async (id, x, y) => {
+      const ticket = ++menuTicket.current;
+      const event = await getEvent(id).catch(() => null);
+      if (event && ticket === menuTicket.current) setEventMenu({ event, x, y });
+    },
+    onImage: (id, file) => void savePhoto(id, file),
+    onImageError: (message) => show(message, "error"),
+  });
+
+  const eventMenuItems = (event: TimelineEvent): ContextMenuItem[] => [
+    {
+      label: "Изменить",
+      icon: <Pencil size={16} strokeWidth={1.75} />,
+      onSelect: () => {
+        setDay(null);
+        void editEvent(event);
+      },
+    },
+    {
+      label: "Открыть генератор изображений",
+      icon: <Sparkles size={16} strokeWidth={1.75} />,
+      onSelect: () => setGenEvent(event),
+    },
+    {
+      label: "Отслеживать",
+      icon: <Target size={16} strokeWidth={1.75} />,
+      checked: event.track === 1,
+      onSelect: () =>
+        void quickUpdate(
+          event,
+          { track: event.track === 1 ? 0 : 1 },
+          event.track === 1 ? "Убрано из «Отслеживания»" : "Добавлено в «Отслеживание»",
+        ),
+    },
+    {
+      label: "Напомнить",
+      icon: <Bell size={16} strokeWidth={1.75} />,
+      onSelect: () => {
+        setDay(null);
+        openCreateReminder({ title: event.title, date: event.date, eventId: event.id });
+      },
+    },
+    { type: "separator" },
+    {
+      label: "Удалить",
+      icon: <Trash2 size={16} strokeWidth={1.75} />,
+      danger: true,
+      onSelect: () => setConfirmEvent(event.id),
+    },
+  ];
+
   const ctx = useMemo(
-    () => ({ openCreate, openView, openDay, openMarkMenu }),
-    [openCreate, openView, openDay, openMarkMenu],
+    () => ({ openCreate, openView, openDay, openMarkMenu, savePhoto }),
+    [openCreate, openView, openDay, openMarkMenu, savePhoto],
   );
 
   const requestDelete = useCallback((id: number) => setConfirmEvent(id), []);
@@ -298,8 +445,6 @@ export function EventsProvider({ children }: { children: ReactNode }) {
         events={day?.events ?? []}
         marks={day?.marks ?? []}
         onView={openView}
-        onEdit={editEvent}
-        onDelete={(e) => setConfirmEvent(e.id)}
         onDeleteMark={doDeleteMark}
         onCreate={openCreate}
         onClose={() => setDay(null)}
@@ -310,6 +455,28 @@ export function EventsProvider({ children }: { children: ReactNode }) {
         message="Удалить это событие? Действие необратимо."
         onConfirm={() => confirmEvent !== null && doDelete(confirmEvent)}
         onClose={() => setConfirmEvent(null)}
+      />
+
+      <ContextMenu
+        open={eventMenu !== null}
+        x={eventMenu?.x ?? 0}
+        y={eventMenu?.y ?? 0}
+        onClose={() => setEventMenu(null)}
+        header={eventMenu ? { title: eventMenu.event.title, subtitle: eventDateLabel(eventMenu.event) } : undefined}
+        items={eventMenu ? eventMenuItems(eventMenu.event) : []}
+      />
+
+      <ImageGenDialog
+        open={genEvent !== null}
+        subject={{
+          title: genEvent?.title ?? "",
+          note: genEvent?.description ?? "",
+          category: categoryPath(categories ?? [], genEvent?.category_id ?? null),
+          currentSrc: genEvent?.cover ? mediaSrc(genEvent.cover) : null,
+        }}
+        applyLabel={genEvent?.cover ? "Заменить фото" : "Сохранить"}
+        onClose={() => setGenEvent(null)}
+        onApply={async (file) => !!genEvent && (await savePhoto(genEvent.id, file)) !== null}
       />
 
       <ContextMenu

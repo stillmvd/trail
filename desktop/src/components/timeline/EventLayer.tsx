@@ -1,3 +1,4 @@
+import { eventSurface } from "@/components/events/useEventSurface";
 import { createElement, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { type Viewport, msToX, xToMs } from "@/lib/projection";
@@ -163,6 +164,7 @@ export function EventLayer({
               <motion.div
                 key={key}
                 {...common}
+                {...eventSurface(ev.id)}
                 onClick={(e) => {
                   const r = e.currentTarget.getBoundingClientRect();
                   onEventClick?.(ev, { x: r.left + r.width / 2, y: r.top + r.height / 2 });
