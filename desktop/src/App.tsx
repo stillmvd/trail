@@ -7,6 +7,7 @@ import { EventsProvider } from "./components/events/EventsProvider";
 import { PeopleProvider } from "./components/events/PeopleProvider";
 import { RemindersProvider } from "./components/events/RemindersProvider";
 import { SearchHost } from "./components/search/SearchHost";
+import { CreateFab } from "./components/nav/CreateFab";
 import { TooltipHost } from "./components/ui/Tooltip";
 import { MediaOptimizer } from "./components/MediaOptimizer";
 import { UpdateToast } from "@stillmvd/tauri-ship";
@@ -69,6 +70,7 @@ export default function App() {
                 </div>
               </div>
               <SearchHost />
+              <CreateFab />
               <TooltipHost />
               <MediaOptimizer />
               <UpdateToast lang="ru" />

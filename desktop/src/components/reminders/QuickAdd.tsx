@@ -45,7 +45,7 @@ export function QuickAdd() {
         className="h-12 min-w-0 flex-1 bg-transparent text-[15px] text-app-text outline-none placeholder:text-muted"
       />
       <div className="w-44 shrink-0">
-        <DatePicker value={date} onChange={setDate} />
+        <DatePicker value={date} onChange={setDate} quick={false} />
       </div>
       <div className="w-28 shrink-0">
         <TimePicker value={time} onChange={setTime} />

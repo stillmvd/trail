@@ -86,7 +86,7 @@ export function GalleryView({
     <div className="relative h-full w-full">
       <div
         ref={scrollRef}
-        className="h-full w-full overflow-y-auto px-6 py-16 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        className="h-full w-full overflow-y-auto px-6 pb-24 pt-16 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
         <div className="mx-auto max-w-6xl">
           {groups.map((group, gi) => (

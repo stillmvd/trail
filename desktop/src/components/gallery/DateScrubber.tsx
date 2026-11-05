@@ -86,7 +86,7 @@ export function DateScrubber({
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
       onPointerCancel={onPointerUp}
-      className="absolute bottom-10 right-2 top-24 z-20 w-8 cursor-ns-resize touch-none"
+      className="absolute bottom-24 right-2 top-24 z-20 w-8 cursor-ns-resize touch-none"
     >
       <div className="absolute bottom-0 left-1/2 top-0 w-0.5 -translate-x-1/2 rounded-full bg-surface-2 opacity-60" />
       <div

@@ -201,8 +201,52 @@ h2 {
 }
 
 .tl-cal-caption-fields,
-.tl-cal-today {
+.tl-cal-today,
+.tl-cal-track {
   pointer-events: auto;
+}
+
+/* Отметка трекера на сегодня в один клик — справа в шапке, симметрично «Сегодня» слева. */
+.tl-cal-track {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 44px;
+  padding: 0 4px 0 16px;
+  border-radius: 9999px;
+  background: var(--ds-surface-2);
+}
+
+.tl-cal-track-label {
+  margin-right: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--rg-muted);
+  white-space: nowrap;
+}
+
+.tl-cal-track-btn {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 9999px;
+  background: var(--ds-surface-3);
+  cursor: pointer;
+  transition: background-color 0.15s, scale 0.15s;
+}
+
+.tl-cal-track-btn:not([aria-pressed="true"]):hover {
+  background: var(--color-surface-active);
+}
+
+.tl-cal-track-btn:active {
+  scale: 0.96;
 }
 
 .tl-cal-caption-fields {
@@ -293,7 +337,7 @@ h2 {
      Overhead — не одно магическое число, а сумма реальных слагаемых вёрстки: правка паддинга
      или кегля шапки видна прямо здесь, а не протухает молча (уже протухала на редизайне). */
   --tl-cal-overhead: calc(
-    48px /* титлбар h-12 */ + 3rem /* padding страницы p-6 */ +
+    48px /* титлбар h-12 */ + 7.5rem /* padding страницы: p-6 сверху, pb-24 под плавающую «+» */ +
       3rem /* padding карточки p-6 */ + 3.4rem /* шапка месяца: текст 2rem + отступ снизу */ +
       1.7rem /* строка дней недели */ + 48px /* 8 зазоров border-spacing по 6px */ +
       40px /* запас: округления высоты ряда не должны рождать скроллбар */
@@ -311,6 +355,11 @@ h2 {
   justify-content: flex-start;
   gap: 0.75rem;
   padding: 0 0.25rem 1rem;
+}
+
+.tl-calendar-lg .tl-cal-track {
+  top: calc(50% - 1.25rem);
+  right: calc(2 * 2.5rem + 0.75rem);
 }
 
 /* Заголовок месяца: смысловая часть жирная, служебный год — светлый. */

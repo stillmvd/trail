@@ -2,7 +2,7 @@ import { useLayoutEffect, useRef, useSyncExternalStore, type FocusEvent, type Po
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "motion/react";
 
-type Side = "right" | "bottom";
+type Side = "right" | "left" | "bottom";
 type Tip = { label: string; rect: DOMRect; side: Side };
 
 const SHOW_DELAY_MS = 400;
@@ -62,9 +62,9 @@ export function tooltip(label: string, side: Side = "right") {
 }
 
 function anchorOf({ rect, side }: Tip) {
-  return side === "right"
-    ? { x: rect.right + GAP, y: rect.top + rect.height / 2 }
-    : { x: rect.left + rect.width / 2, y: rect.bottom + GAP };
+  if (side === "right") return { x: rect.right + GAP, y: rect.top + rect.height / 2 };
+  if (side === "left") return { x: rect.left - GAP, y: rect.top + rect.height / 2 };
+  return { x: rect.left + rect.width / 2, y: rect.bottom + GAP };
 }
 
 export function TooltipHost() {
@@ -94,7 +94,9 @@ export function TooltipHost() {
   }, []);
 
   const pos = t ? anchorOf(t) : null;
-  const right = t?.side === "right";
+  const left = t?.side === "left";
+  const right = t?.side === "right" || left;
+  const shift = left ? -4 : 4;
 
   return createPortal(
     <AnimatePresence>
@@ -103,8 +105,8 @@ export function TooltipHost() {
           key={t.side}
           role="tooltip"
           className="pointer-events-none fixed left-0 top-0 z-[100]"
-          style={{ originX: right ? 0 : 0.5, originY: right ? 0.5 : 0 }}
-          initial={{ opacity: 0, scale: 0.96, x: pos.x - (right ? 4 : 0), y: pos.y - (right ? 0 : 4) }}
+          style={{ originX: left ? 1 : right ? 0 : 0.5, originY: right ? 0.5 : 0 }}
+          initial={{ opacity: 0, scale: 0.96, x: pos.x - (right ? shift : 0), y: pos.y - (right ? 0 : 4) }}
           animate={{ opacity: 1, scale: 1, x: pos.x, y: pos.y }}
           exit={{ opacity: 0, scale: 0.98, transition: { duration: 0.1 } }}
           transition={{ type: "spring", duration: 0.28, bounce: 0 }}
@@ -112,7 +114,7 @@ export function TooltipHost() {
           <div
             ref={boxRef}
             className={`whitespace-nowrap rounded-xl bg-surface-3 px-2.5 py-1.5 text-[12.5px] font-medium text-app-text ${
-              right ? "-translate-y-1/2" : "-translate-x-1/2"
+              left ? "-translate-x-full -translate-y-1/2" : right ? "-translate-y-1/2" : "-translate-x-1/2"
             }`}
             style={{ boxShadow: "var(--ds-shadow-2)" }}
           >

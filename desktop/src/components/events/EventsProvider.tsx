@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { Bell, Copy, Pencil, Shapes, Sparkles, Target, Trash2 } from "lucide-react";
+import { Bell, Pencil, Shapes, Sparkles, Target, Trash2 } from "lucide-react";
 import { CategorySheet } from "@/components/timeline/CategoryPicker";
 import { reminderFromEvent } from "@/lib/reminders";
 import { searchOpenStore } from "@/lib/search";
@@ -38,12 +38,13 @@ import {
 import { listMediaByEvent, addMedia, deleteMedia } from "@/db/queries/media";
 import { createMark, deleteMark, getMarksInRange } from "@/db/queries/marks";
 import { listCategories } from "@/db/queries/categories";
-import { listMarkTypes } from "@/db/queries/markTypes";
+import { listMarkTypes, type MarkType } from "@/db/queries/markTypes";
 import { writeMediaFile, deleteMediaFile } from "@/lib/media";
 import type { TimelineEvent } from "@/db/queries/events";
 import type { Mark } from "@/db/queries/marks";
 
 type DayState = { dateISO: string; events: TimelineEvent[]; marks: Mark[] };
+type Calendar = Awaited<ReturnType<typeof loadCalendar>>;
 
 type EventsCtx = {
   openCreate: (dateISO: string) => void;
@@ -52,6 +53,7 @@ type EventsCtx = {
   openMarkMenu: (mark: Mark, x: number, y: number) => void;
   savePhoto: (eventId: number, file: File) => Promise<string | null>;
   moveEvent: (eventId: number, dateISO: string) => void;
+  toggleMark: (type: MarkType, dateISO: string) => void;
 };
 
 function editableTarget(target: EventTarget | null) {
@@ -353,7 +355,6 @@ export function EventsProvider({ children }: { children: ReactNode }) {
 
   const { openCreateReminder } = useReminders();
   const [eventMenu, setEventMenu] = useState<{ event: TimelineEvent; x: number; y: number } | null>(null);
-  const [copyMenu, setCopyMenu] = useState<{ text: string; x: number; y: number } | null>(null);
   const [genEvent, setGenEvent] = useState<TimelineEvent | null>(null);
   const [catEvent, setCatEvent] = useState<TimelineEvent | null>(null);
   const menuTicket = useRef(0);
@@ -382,7 +383,6 @@ export function EventsProvider({ children }: { children: ReactNode }) {
       const shift = differenceInCalendarDays(parseISO(dateISO), parseISO(event.date));
       const patch = { date: dateISO, end_date: event.end_date && addDaysISO(event.end_date, shift) };
       if (patch.end_date && patch.end_date > TIMELINE_MAX_DATE) return show("Дата вне диапазона таймлайна", "error");
-      type Calendar = Awaited<ReturnType<typeof loadCalendar>>;
       const snapshot = getQueryData<Calendar>(loadCalendar);
       setQueryData<Calendar>(
         loadCalendar,
@@ -395,6 +395,34 @@ export function EventsProvider({ children }: { children: ReactNode }) {
       } catch (e) {
         setQueryData(loadCalendar, snapshot);
         show(`Не удалось перенести: ${String(e)}`, "error");
+      }
+    },
+    [show],
+  );
+
+  const toggleMark = useCallback(
+    async (type: MarkType, dateISO: string) => {
+      const snapshot = getQueryData<Calendar>(loadCalendar);
+      const existing = snapshot?.marks.find((m) => m.date === dateISO && m.type_id === type.id);
+      if (existing && existing.id < 0) return;
+      setQueryData<Calendar>(loadCalendar, (d) =>
+        d && {
+          ...d,
+          marks: existing
+            ? d.marks.filter((m) => m.id !== existing.id)
+            : [
+                ...d.marks,
+                { id: -Date.now(), date: dateISO, type_id: type.id, type_name: type.name, type_icon: type.icon, type_color: type.color },
+              ],
+        },
+      );
+      try {
+        if (existing) await deleteMark(existing.id);
+        else await createMark({ date: dateISO, markTypeId: type.id });
+        bumpDataVersion();
+      } catch (e) {
+        if (snapshot) setQueryData<Calendar>(loadCalendar, (d) => d && { ...d, marks: snapshot.marks });
+        show(`Не удалось ${existing ? "снять" : "поставить"} отметку: ${String(e)}`, "error");
       }
     },
     [show],
@@ -435,7 +463,6 @@ export function EventsProvider({ children }: { children: ReactNode }) {
       const event = await getEvent(id).catch(() => null);
       if (event && ticket === menuTicket.current) setEventMenu({ event, x, y });
     },
-    onCopyMenu: (text, x, y) => setCopyMenu({ text, x, y }),
     onImage: (id, file) => void savePhoto(id, file),
     onImageError: (message) => show(message, "error"),
   });
@@ -491,8 +518,8 @@ export function EventsProvider({ children }: { children: ReactNode }) {
   ];
 
   const ctx = useMemo(
-    () => ({ openCreate, openView, openDay, openMarkMenu, savePhoto, moveEvent }),
-    [openCreate, openView, openDay, openMarkMenu, savePhoto, moveEvent],
+    () => ({ openCreate, openView, openDay, openMarkMenu, savePhoto, moveEvent, toggleMark }),
+    [openCreate, openView, openDay, openMarkMenu, savePhoto, moveEvent, toggleMark],
   );
 
   const requestDelete = useCallback((id: number) => setConfirmEvent(id), []);
@@ -539,22 +566,6 @@ export function EventsProvider({ children }: { children: ReactNode }) {
         onClose={() => setEventMenu(null)}
         header={eventMenu ? { title: eventMenu.event.title, subtitle: eventDateLabel(eventMenu.event) } : undefined}
         items={eventMenu ? eventMenuItems(eventMenu.event) : []}
-      />
-
-      <ContextMenu
-        open={copyMenu !== null}
-        x={copyMenu?.x ?? 0}
-        y={copyMenu?.y ?? 0}
-        onClose={() => setCopyMenu(null)}
-        items={[
-          {
-            label: "Копировать",
-            icon: <Copy size={16} strokeWidth={1.75} />,
-            onSelect: () =>
-              copyMenu &&
-              navigator.clipboard.writeText(copyMenu.text).catch((e) => show(`Не удалось скопировать: ${String(e)}`, "error")),
-          },
-        ]}
       />
 
       <CategorySheet

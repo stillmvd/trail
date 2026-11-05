@@ -17,12 +17,6 @@ function editable(target: EventTarget | null) {
   return target instanceof Element && !!target.closest("input, textarea, [contenteditable='true']");
 }
 
-function selectionAt(target: EventTarget | null): string | null {
-  const sel = window.getSelection();
-  const text = sel && !sel.isCollapsed ? sel.toString() : "";
-  return text.trim() && target instanceof Node && sel?.containsNode(target, true) ? text : null;
-}
-
 function pastedImage(data: DataTransfer | null): File | null {
   const files = filterAcceptedImages(
     Array.from(data?.items ?? [])
@@ -35,19 +29,17 @@ function pastedImage(data: DataTransfer | null): File | null {
 
 export function useEventSurface({
   onMenu,
-  onCopyMenu,
   onImage,
   onImageError,
 }: {
   onMenu: (id: number, x: number, y: number) => void;
-  onCopyMenu: (text: string, x: number, y: number) => void;
   onImage: (id: number, file: File) => void;
   onImageError: (message: string) => void;
 }) {
-  const handlers = useRef({ onMenu, onCopyMenu, onImage, onImageError });
+  const handlers = useRef({ onMenu, onImage, onImageError });
 
   useEffect(() => {
-    handlers.current = { onMenu, onCopyMenu, onImage, onImageError };
+    handlers.current = { onMenu, onImage, onImageError };
   });
 
   useEffect(() => {
@@ -64,8 +56,6 @@ export function useEventSurface({
       if (import.meta.env.DEV && e.shiftKey) return;
       if (editable(e.target)) return;
       e.preventDefault();
-      const text = selectionAt(e.target);
-      if (text) return handlers.current.onCopyMenu(text, e.clientX, e.clientY);
       const target = hit(e.target);
       if (target) handlers.current.onMenu(target.id, e.clientX, e.clientY);
     };

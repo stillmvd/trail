@@ -16,7 +16,7 @@ export function LayerToggle() {
 
   return (
     <div
-      className="absolute bottom-4 left-1/2 z-30 flex -translate-x-1/2 gap-1 rounded-full bg-surface-2 p-1.5"
+      className="absolute bottom-6 left-1/2 z-30 flex -translate-x-1/2 gap-1 rounded-full bg-surface-2 p-1.5"
       onPointerDown={(e) => e.stopPropagation()}
       onPointerUp={(e) => e.stopPropagation()}
     >

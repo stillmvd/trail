@@ -123,6 +123,7 @@ export function PersonForm({
         />
 
         <DatePicker
+          quick={false}
           label={hasYear ? "Дата рождения" : "День и месяц (год не учитывается)"}
           value={birthDate}
           onChange={setBirthDate}

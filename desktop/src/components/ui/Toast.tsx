@@ -11,6 +11,7 @@ import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "motion/react";
 import { CheckCircle2, AlertCircle, Info, X } from "lucide-react";
 import { SHEET_WIDTH, useAnySheetOpen } from "./SideSheet";
+import { FAB_SIZE, useCornerFab } from "./cornerFab";
 
 type ToastType = "success" | "error" | "info";
 
@@ -35,6 +36,7 @@ const META: Record<ToastType, { icon: typeof Info; color: string }> = {
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<ToastItem[]>([]);
   const sheetOpen = useAnySheetOpen();
+  const corner = useCornerFab() !== null;
   const idRef = useRef(0);
 
   const show = useCallback((message: string, type: ToastType = "info") => {
@@ -52,9 +54,9 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       {children}
       {createPortal(
         <motion.div
-          className="pointer-events-none fixed bottom-6 z-[100] flex flex-col items-end gap-2"
+          className="pointer-events-none fixed z-[100] flex flex-col items-end gap-2"
           initial={false}
-          animate={{ right: sheetOpen ? SHEET_WIDTH + 24 : 24 }}
+          animate={{ right: sheetOpen ? SHEET_WIDTH + 24 : 24, bottom: corner ? 24 + FAB_SIZE + 12 : 24 }}
           transition={{ type: "spring", duration: 0.3, bounce: 0 }}
         >
           <AnimatePresence>

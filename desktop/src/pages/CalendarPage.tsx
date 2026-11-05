@@ -1,12 +1,14 @@
 import { CalendarView } from "@/components/calendar/CalendarView";
 import { loadCalendar } from "@/db/queries/loaders";
 import { useQuery } from "@/lib/useQuery";
+import { listMarkTypes } from "@/db/queries/markTypes";
 import { useEvents } from "@/components/events/EventsProvider";
 import { usePeople } from "@/components/events/PeopleProvider";
 import { filterStore } from "@/lib/search";
 
 export function CalendarPage() {
-  const { openView, openDay, openCreate, openMarkMenu, moveEvent } = useEvents();
+  const { openView, openDay, openCreate, openMarkMenu, moveEvent, toggleMark } = useEvents();
+  const { data: markTypes } = useQuery(listMarkTypes);
   const { openViewPerson } = usePeople();
   const filter = filterStore.use();
   const { data, error } = useQuery(loadCalendar);
@@ -34,6 +36,8 @@ export function CalendarPage() {
       onMarkMenu={openMarkMenu}
       onPersonOpen={openViewPerson}
       onEventMove={moveEvent}
+      markTypes={markTypes ?? []}
+      onToggleMark={toggleMark}
     />
   );
 }

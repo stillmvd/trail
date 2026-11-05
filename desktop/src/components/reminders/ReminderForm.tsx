@@ -113,6 +113,7 @@ export function ReminderForm({
 
       <div className="grid grid-cols-2 gap-0.5">
         <DatePicker
+          quick={false}
           variant="tile"
           className="rounded-l-3xl rounded-r-xs"
           value={date}

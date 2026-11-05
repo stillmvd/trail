@@ -4,7 +4,7 @@ import { ru } from "date-fns/locale";
 import { parseISO, format, addMonths, startOfMonth } from "date-fns";
 import { CalendarDays, ChevronDown, ChevronLeft, ChevronRight, X } from "lucide-react";
 import "react-day-picker/style.css";
-import { formatFullRu, parseTypedDate } from "@/lib/dates";
+import { addDaysISO, formatFullRu, parseTypedDate, todayISO } from "@/lib/dates";
 import { WheelField } from "./WheelField";
 import { useBack } from "@/lib/back";
 
@@ -100,6 +100,7 @@ export function DatePicker({
   className = "",
   align = "start",
   defaultOpen = false,
+  quick = true,
   onClear,
 }: {
   label?: string;
@@ -112,6 +113,7 @@ export function DatePicker({
   className?: string;
   align?: "start" | "end";
   defaultOpen?: boolean;
+  quick?: boolean;
   onClear?: () => void;
 }) {
   const [open, setOpen] = useState(defaultOpen);
@@ -122,6 +124,13 @@ export function DatePicker({
   const minDate = min ? parseISO(min) : undefined;
   const maxDate = max ? parseISO(max) : undefined;
   const inRange = (iso: string) => (!min || iso >= min) && (!max || iso <= max);
+  const today = todayISO();
+  const quickDays = quick
+    ? [
+        { label: "Сегодня", iso: today },
+        { label: "Вчера", iso: addDaysISO(today, -1) },
+      ].filter((d) => inRange(d.iso))
+    : [];
   const parsed = typed ? parseTypedDate(typed) : null;
   const typedISO = parsed && inRange(parsed) ? parsed : null;
   const typedHint = typedISO
@@ -270,6 +279,26 @@ export function DatePicker({
               align === "end" ? "right-0" : "left-0"
             }`}
           >
+            {quickDays.length > 0 && (
+              <div className="mb-3 flex gap-1.5">
+                {quickDays.map(({ label, iso }) => (
+                  <button
+                    key={iso}
+                    type="button"
+                    aria-pressed={value === iso}
+                    onClick={() => {
+                      onChange(iso);
+                      close();
+                    }}
+                    className={`h-8 cursor-pointer rounded-full px-3.5 text-[13px] font-semibold text-app-text transition-[background-color,scale] duration-150 ease-[var(--rg-ease)] active:scale-[0.96] ${
+                      value === iso ? "bg-surface-active" : "bg-surface-3 hover:bg-surface-active"
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            )}
             <DayPicker
               mode="single"
               locale={ru}

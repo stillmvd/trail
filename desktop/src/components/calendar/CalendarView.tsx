@@ -31,6 +31,8 @@ import { holidayName } from "@/lib/holidays";
 import { getNonWorkingISO } from "@/lib/workcalendar";
 import type { TimelineEvent } from "@/db/queries/events";
 import type { Mark } from "@/db/queries/marks";
+import type { MarkType } from "@/db/queries/markTypes";
+import { tooltip } from "@/components/ui/Tooltip";
 import { WheelField } from "@/components/ui/WheelField";
 import type { Person } from "@/db/queries/people";
 import { MediaImg } from "@/components/ui/MediaImg";
@@ -139,6 +141,8 @@ type CalCtx = {
   onMarkMenu: (mark: Mark, x: number, y: number) => void;
   onPersonOpen: (person: Person) => void;
   onEventMove: (eventId: number, iso: string) => void;
+  trackers: { type: MarkType; marked: boolean }[];
+  onToggleMark: (type: MarkType) => void;
   displayMonth: Date;
   onShift: (unit: "month" | "year", delta: number) => void;
   onToday: () => void;
@@ -157,6 +161,8 @@ const CalendarContext = createContext<CalCtx>({
   onMarkMenu: () => {},
   onPersonOpen: () => {},
   onEventMove: () => {},
+  trackers: [],
+  onToggleMark: () => {},
   displayMonth: new Date(0),
   onShift: () => {},
   onToday: () => {},
@@ -333,6 +339,33 @@ function DayCell({ day, modifiers, className, ...rest }: DayProps) {
   );
 }
 
+function TodayTrackers() {
+  const { trackers, onToggleMark } = useContext(CalendarContext);
+  if (trackers.length === 0) return null;
+  return (
+    <div className="tl-cal-track">
+      <span className="tl-cal-track-label">Отметить</span>
+      {trackers.map(({ type, marked }) => {
+        const Icon = resolveIconOrNull(type.icon);
+        return (
+          <button
+            key={type.id}
+            type="button"
+            aria-pressed={marked}
+            aria-label={type.name}
+            {...tooltip(type.name, "bottom")}
+            className="tl-cal-track-btn"
+            style={marked ? { background: type.color, color: onColorFor(type.color) } : { color: type.color }}
+            onClick={() => onToggleMark(type)}
+          >
+            {Icon && createElement(Icon, { size: 18, strokeWidth: 1.75 })}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 function MonthCaption({ calendarMonth, displayIndex, ...rest }: MonthCaptionProps) {
   const { displayMonth, onShift, onToday, isTodayMonth } = useContext(CalendarContext);
   void calendarMonth;
@@ -358,6 +391,7 @@ function MonthCaption({ calendarMonth, displayIndex, ...rest }: MonthCaptionProp
           Сегодня
         </button>
       )}
+      <TodayTrackers />
     </div>
   );
 }
@@ -376,6 +410,8 @@ export function CalendarView({
   onMarkMenu = () => {},
   onPersonOpen = () => {},
   onEventMove = () => {},
+  markTypes = [],
+  onToggleMark = () => {},
 }: {
   events: TimelineEvent[];
   marks?: Mark[];
@@ -389,6 +425,8 @@ export function CalendarView({
   onMarkMenu?: (mark: Mark, x: number, y: number) => void;
   onPersonOpen?: (person: Person) => void;
   onEventMove?: (eventId: number, iso: string) => void;
+  markTypes?: MarkType[];
+  onToggleMark?: (type: MarkType, iso: string) => void;
 }) {
   const today = useMemo(() => new Date(), []);
   // Верхняя граница навигации/создания: сегодня + горизонт будущего.
@@ -402,6 +440,12 @@ export function CalendarView({
   const dayIndex = useMemo(() => buildDayIndex(events, filter), [events, filter]);
   const markIndex = useMemo(() => buildMarkIndex(marks, filter), [marks, filter]);
   const birthdayIndex = useMemo(() => buildBirthdayIndex(people), [people]);
+  const todayKey = format(today, "yyyy-MM-dd");
+  const trackers = useMemo(
+    () => markTypes.map((type) => ({ type, marked: marks.some((m) => m.date === todayKey && m.type_id === type.id) })),
+    [markTypes, marks, todayKey],
+  );
+  const toggleToday = useCallback((type: MarkType) => onToggleMark(type, todayKey), [onToggleMark, todayKey]);
 
   // Нерабочие дни (праздники + переносы РФ) по годам; null — данных нет, fallback на сб/вс.
   const displayYear = month.getFullYear();
@@ -469,6 +513,8 @@ export function CalendarView({
       onMarkMenu,
       onPersonOpen,
       onEventMove,
+      trackers,
+      onToggleMark: toggleToday,
       displayMonth: month,
       onShift: handleShift,
       onToday: handleToday,
@@ -486,6 +532,8 @@ export function CalendarView({
       onMarkMenu,
       onPersonOpen,
       onEventMove,
+      trackers,
+      toggleToday,
       month,
       handleShift,
       handleToday,
@@ -496,7 +544,7 @@ export function CalendarView({
 
   return (
     <div className="h-full w-full overflow-auto">
-      <div className="flex min-h-full items-center justify-center p-6">
+      <div className="flex min-h-full items-center justify-center px-6 pb-24 pt-6">
         <div
           ref={cardRef}
           className="tl-calendar tl-calendar-lg w-full max-w-[1500px] rounded-4xl p-6"
