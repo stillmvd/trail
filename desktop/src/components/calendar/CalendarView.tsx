@@ -41,6 +41,8 @@ type Anchor = { x: number; y: number };
 
 const START_MONTH = parseISO(BIRTH_DATE);
 const MAX_CHIPS = 3;
+const CHIP_HEIGHT = 22;
+const CHIP_GAP = 2;
 const EVENT_DRAG = "application/x-trail-event";
 
 // Горизонт будущего: «напоминания» можно листать на 15 лет вперёд от сегодня.
@@ -148,9 +150,11 @@ type CalCtx = {
   onToday: () => void;
   isTodayMonth: boolean;
   dayKind: (iso: string, date: Date, disabled: boolean) => "" | "weekend" | "holiday";
+  chipCap: number;
 };
 
 const CalendarContext = createContext<CalCtx>({
+  chipCap: MAX_CHIPS,
   dayIndex: new Map(),
   markIndex: new Map(),
   birthdayIndex: new Map(),
@@ -191,12 +195,13 @@ function DayCell({ day, modifiers, className, ...rest }: DayProps) {
     onPersonOpen,
     onEventMove,
     dayKind,
+    chipCap,
   } = useContext(CalendarContext);
   const [dropOver, setDropOver] = useState(false);
   const dayEvents = modifiers.disabled ? [] : dayIndex.get(day.isoDate) ?? [];
   const dayMarks = modifiers.disabled ? [] : markIndex.get(day.isoDate) ?? [];
   const dayBirthdays = modifiers.disabled ? [] : birthdayIndex.get(day.isoDate.slice(5)) ?? [];
-  const shown = dayEvents.slice(0, MAX_CHIPS);
+  const shown = dayEvents.slice(0, dayEvents.length > chipCap ? Math.max(chipCap - 1, 0) : chipCap);
   const extra = dayEvents.length - shown.length;
   const kind = dayKind(day.isoDate, day.date, !!modifiers.disabled);
   const holiday = kind === "holiday" ? holidayName(day.isoDate) : null;
@@ -289,7 +294,7 @@ function DayCell({ day, modifiers, className, ...rest }: DayProps) {
             </div>
           )}
         </div>
-        {shown.length > 0 && (
+        {dayEvents.length > 0 && (
           <div className="tl-cal-chips" style={{ opacity: future ? 0.5 : undefined }}>
             {shown.map((e) => {
               const accent = eventAccent(e);
@@ -501,6 +506,25 @@ export function CalendarView({
     return () => el.removeEventListener("wheel", onWheel);
   }, [handleShift]);
 
+  const [chipCap, setChipCap] = useState(MAX_CHIPS);
+  useEffect(() => {
+    const el = cardRef.current;
+    if (!el) return;
+    const measure = () => {
+      const cell = el.querySelector<HTMLElement>(".tl-cal-cell");
+      if (!cell) return;
+      const cs = getComputedStyle(cell);
+      const head = Math.max(0, ...[...el.querySelectorAll<HTMLElement>(".tl-cal-head")].map((h) => h.offsetHeight));
+      const chip = el.querySelector<HTMLElement>(".tl-cal-chip")?.offsetHeight || CHIP_HEIGHT;
+      const gap = parseFloat(cs.rowGap) || 0;
+      const avail = cell.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom) - head - gap;
+      setChipCap(Math.max(0, Math.floor((avail + CHIP_GAP) / (chip + CHIP_GAP))));
+    };
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [month, dayIndex]);
+
   const ctx = useMemo<CalCtx>(
     () => ({
       dayIndex,
@@ -520,8 +544,10 @@ export function CalendarView({
       onToday: handleToday,
       isTodayMonth: isSameMonth(month, today),
       dayKind,
+      chipCap,
     }),
     [
+      chipCap,
       dayIndex,
       markIndex,
       birthdayIndex,

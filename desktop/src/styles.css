@@ -338,11 +338,11 @@ h2 {
      или кегля шапки видна прямо здесь, а не протухает молча (уже протухала на редизайне). */
   --tl-cal-overhead: calc(
     48px /* титлбар h-12 */ + 7.5rem /* padding страницы: p-6 сверху, pb-24 под плавающую «+» */ +
-      3rem /* padding карточки p-6 */ + 3.4rem /* шапка месяца: текст 2rem + отступ снизу */ +
-      1.7rem /* строка дней недели */ + 48px /* 8 зазоров border-spacing по 6px */ +
-      40px /* запас: округления высоты ряда не должны рождать скроллбар */
+      3rem /* padding карточки p-6 */ + 5.25rem /* шапка месяца: колёса месяца и года + отступ 1rem */ +
+      2.2rem /* строка дней недели */ + 48px /* 8 зазоров border-spacing по 6px */ +
+      8px /* запас на округления */
   );
-  --rdp-day-height: clamp(68px, (100vh - var(--tl-cal-overhead)) / 6, 130px);
+  --rdp-day-height: clamp(48px, (100vh - var(--tl-cal-overhead)) / 6, 130px);
   --rdp-day_button-width: 108px;
   --rdp-day_button-height: 92px;
   --rdp-day_button-border-radius: 0.75rem;
@@ -440,6 +440,7 @@ h2 {
 
 /* Сетка месяца — плитки с зазором, а не разлинованная таблица. */
 .tl-calendar-lg .tl-cal-cell {
+  height: var(--rdp-day-height);
   border-radius: var(--ds-radius-md);
   background: var(--ds-surface-2);
 }
