@@ -24,12 +24,14 @@ export function Select({
   value,
   onChange,
   placeholder = "—",
+  raised = false,
 }: {
   label?: string;
   options: SelectOption[];
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;
+  raised?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -75,7 +77,7 @@ export function Select({
           onClick={() => setOpen((o) => !o)}
           aria-expanded={open}
           className={`flex h-11 w-full cursor-pointer items-center gap-2 rounded-full px-4 text-sm text-app-text transition-colors duration-150 ease-[var(--rg-ease)] ${
-            open ? "bg-surface-active" : "bg-surface-2 hover:bg-surface-3"
+            open ? "bg-surface-active" : raised ? "bg-surface-3 hover:bg-surface-active" : "bg-surface-2 hover:bg-surface-3"
           }`}
         >
           {selected && <OptionIcon opt={selected} />}

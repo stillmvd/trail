@@ -1,4 +1,6 @@
+import type Database from "@tauri-apps/plugin-sql";
 import { getDb } from "../database";
+import { shadeColor } from "@/lib/colors";
 
 export type Category = {
   id: number;
@@ -69,7 +71,87 @@ export async function updateCategory(id: number, input: CategoryInput): Promise<
   );
 }
 
-export async function deleteCategory(id: number): Promise<void> {
+export async function countEventsByCategory(): Promise<Record<number, number>> {
   const db = await getDb();
+  const rows = await db.select<{ id: number; n: number }[]>(
+    `SELECT category_id AS id, COUNT(*) AS n
+     FROM events
+     WHERE category_id IS NOT NULL
+     GROUP BY category_id`,
+  );
+  return Object.fromEntries(rows.map((r) => [r.id, r.n]));
+}
+
+export async function reorderCategories(ids: number[], from = 0): Promise<void> {
+  const db = await getDb();
+  for (const [i, id] of ids.entries()) {
+    await db.execute("UPDATE categories SET sort_order = ? WHERE id = ?", [from + i, id]);
+  }
+}
+
+export async function shadeGroups(db: Database, parentIds?: number[]): Promise<void> {
+  const parents = await db.select<{ id: number; color: string }[]>(
+    "SELECT id, color FROM categories WHERE parent_id IS NULL",
+  );
+  for (const parent of parents) {
+    if (parentIds && !parentIds.includes(parent.id)) continue;
+    const children = await db.select<{ id: number }[]>(
+      "SELECT id FROM categories WHERE parent_id = ? ORDER BY sort_order, id",
+      [parent.id],
+    );
+    for (const [i, child] of children.entries()) {
+      await db.execute("UPDATE categories SET color = ? WHERE id = ?", [
+        shadeColor(parent.color, i, children.length),
+        child.id,
+      ]);
+    }
+  }
+}
+
+export async function shadeGroup(parentId: number | null): Promise<void> {
+  if (parentId === null) return;
+  await shadeGroups(await getDb(), [parentId]);
+}
+
+async function nextSortOrder(db: Database, parentId: number | null): Promise<number> {
+  const rows = await db.select<{ m: number | null }[]>(
+    "SELECT MAX(sort_order) AS m FROM categories WHERE parent_id IS ?",
+    [parentId],
+  );
+  return (rows[0]?.m ?? 0) + 1;
+}
+
+export async function moveCategory(id: number, parentId: number | null): Promise<void> {
+  const db = await getDb();
+  const [cat] = await db.select<Category[]>("SELECT * FROM categories WHERE id = ?", [id]);
+  if (!cat || cat.parent_id === parentId) return;
+  await db.execute("UPDATE categories SET parent_id = ?, sort_order = ? WHERE id = ?", [
+    parentId,
+    await nextSortOrder(db, parentId),
+    id,
+  ]);
+  await shadeGroups(
+    db,
+    [cat.parent_id, parentId].filter((p): p is number => p !== null),
+  );
+}
+
+export async function deleteCategory(id: number, targetId: number | null = null): Promise<void> {
+  const db = await getDb();
+  const [cat] = await db.select<Category[]>("SELECT * FROM categories WHERE id = ?", [id]);
+  if (!cat) return;
+  await db.execute("UPDATE events SET category_id = ? WHERE category_id = ?", [targetId, id]);
+  const children = await db.select<{ id: number }[]>(
+    "SELECT id FROM categories WHERE parent_id = ? ORDER BY sort_order, id",
+    [id],
+  );
+  let order = await nextSortOrder(db, targetId);
+  for (const child of children) {
+    await db.execute("UPDATE categories SET parent_id = ?, sort_order = ? WHERE id = ?", [targetId, order++, child.id]);
+  }
   await db.execute("DELETE FROM categories WHERE id = ?", [id]);
+  await shadeGroups(
+    db,
+    [cat.parent_id, targetId].filter((p): p is number => p !== null),
+  );
 }

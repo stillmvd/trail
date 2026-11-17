@@ -41,6 +41,21 @@ export async function updateMarkType(id: number, input: MarkTypeInput): Promise<
   );
 }
 
+export async function countMarksByType(): Promise<Record<number, number>> {
+  const db = await getDb();
+  const rows = await db.select<{ id: number; n: number }[]>(
+    "SELECT mark_type_id AS id, COUNT(*) AS n FROM marks GROUP BY mark_type_id",
+  );
+  return Object.fromEntries(rows.map((r) => [r.id, r.n]));
+}
+
+export async function reorderMarkTypes(ids: number[]): Promise<void> {
+  const db = await getDb();
+  for (const [i, id] of ids.entries()) {
+    await db.execute("UPDATE mark_types SET sort_order = ? WHERE id = ?", [i, id]);
+  }
+}
+
 export async function deleteMarkType(id: number): Promise<void> {
   const db = await getDb();
   await db.execute("DELETE FROM mark_types WHERE id = ?", [id]);

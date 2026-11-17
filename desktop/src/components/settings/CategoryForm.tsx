@@ -1,13 +1,13 @@
-import { createElement, useState } from "react";
-import type { Category } from "@/db/queries/categories";
+import { useState, type FormEvent } from "react";
+import { Trash2 } from "lucide-react";
 import { DEFAULT_CATEGORY_COLOR } from "@/lib/colors";
-import { resolveIcon } from "@/lib/icons";
 import { Input } from "@/components/ui/Input";
 import { IconPicker } from "@/components/ui/IconPicker";
 import { ColorPicker } from "@/components/ui/ColorPicker";
 import { Select, type SelectOption } from "@/components/ui/Select";
 import { Button } from "@/components/ui/Button";
-import { FormGroup } from "@/components/ui/FormGroup";
+import { useSheetGuard } from "@/components/ui/SideSheet";
+import { RefDot } from "./refRows";
 
 export interface CategoryFormPayload {
   name: string;
@@ -16,51 +16,52 @@ export interface CategoryFormPayload {
   parentId: number | null;
 }
 
+export type ParentOption = { id: number; name: string; icon: string; color: string };
+
 export function CategoryForm({
-  rootCategories,
   initial,
   mode,
-  lockedParentId,
-  selfId,
+  parents,
+  shade,
   submitting = false,
   onSubmit,
   onCancel,
+  onDelete,
 }: {
-  rootCategories: Category[];
   initial?: Partial<CategoryFormPayload>;
   mode: "create" | "edit";
-  lockedParentId?: number | null;
-  selfId?: number;
+  parents?: ParentOption[];
+  shade?: (parentId: number) => string;
   submitting?: boolean;
   onSubmit: (payload: CategoryFormPayload) => void;
   onCancel: () => void;
+  onDelete?: () => void;
 }) {
   const [name, setName] = useState(initial?.name ?? "");
   const [icon, setIcon] = useState(initial?.icon ?? "Circle");
   const [color, setColor] = useState(initial?.color ?? DEFAULT_CATEGORY_COLOR);
-  const [parentId, setParentId] = useState<number | null>(
-    lockedParentId !== undefined ? lockedParentId : (initial?.parentId ?? null),
-  );
+  const [parentId, setParentId] = useState<number | null>(initial?.parentId ?? null);
   const [nameError, setNameError] = useState<string>();
 
-  const parentLocked = lockedParentId !== undefined;
+  const dirty =
+    name !== (initial?.name ?? "") ||
+    icon !== (initial?.icon ?? "Circle") ||
+    color !== (initial?.color ?? DEFAULT_CATEGORY_COLOR) ||
+    parentId !== (initial?.parentId ?? null);
+  useSheetGuard(dirty);
+
+  const parent = parentId !== null ? parents?.find((p) => p.id === parentId) : undefined;
+  const shown = parentId !== null && shade ? shade(parentId) : color;
 
   const parentOptions: SelectOption[] = [
-    { value: "", label: "Без родителя" },
-    ...rootCategories
-      .filter((c) => c.id !== selfId)
-      .map((c) => ({
-        value: String(c.id),
-        label: c.name,
-        icon: c.icon,
-        color: c.color,
-      })),
+    { value: "", label: "Верхний уровень" },
+    ...(parents ?? []).map((c) => ({ value: String(c.id), label: c.name, icon: c.icon, color: c.color })),
   ];
 
-  function handleSubmit(e: React.FormEvent) {
+  function handleSubmit(e: FormEvent) {
     e.preventDefault();
     if (!name.trim()) {
-      setNameError("Название не может быть пустым");
+      setNameError("Добавь название");
       return;
     }
     setNameError(undefined);
@@ -68,57 +69,48 @@ export function CategoryForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-      <FormGroup>
-        <div className="grid grid-cols-2 gap-5">
-          <div className="flex flex-col gap-3.5">
-            <Input
-              label="Название"
-              value={name}
-              onChange={setName}
-              error={nameError}
-              autoFocus
-              placeholder="Название категории"
-            />
-
-            <ColorPicker label="Цвет" value={color} onChange={setColor} />
-
-            {!parentLocked && (
-              <Select
-                label="Родительская категория"
-                options={parentOptions}
-                value={parentId !== null ? String(parentId) : ""}
-                onChange={(v) => setParentId(v ? Number(v) : null)}
-                placeholder="Без родителя"
-              />
-            )}
-          </div>
-
-          <div className="flex flex-col gap-3.5">
-            <IconPicker label="Иконка" value={icon} onChange={setIcon} color={color} />
-
-            <div className="flex flex-col gap-1">
-              <span className="text-xs font-medium text-muted">Предпросмотр</span>
-              <div className="flex items-center gap-2.5 rounded-full bg-surface-2 px-3 py-2">
-                <span
-                  className="grid h-8 w-8 shrink-0 place-items-center rounded-full"
-                  style={{ background: `${color}22` }}
-                >
-                  {createElement(resolveIcon(icon), {
-                    size: 16,
-                    style: { color },
-                  })}
-                </span>
-                <span className="truncate text-sm font-medium text-app-text">
-                  {name.trim() || "—"}
-                </span>
-              </div>
-            </div>
-          </div>
+    <form onSubmit={handleSubmit} className="flex min-h-full flex-col gap-6">
+      <div className="flex items-center gap-4 rounded-3xl bg-surface-2 p-3">
+        <RefDot icon={icon} color={shown} size={56} />
+        <div className="flex min-w-0 flex-col gap-0.5">
+          <span className={`truncate text-[17px] font-semibold ${name.trim() ? "text-app-text" : "text-muted"}`}>
+            {name.trim() || "Название"}
+          </span>
+          <span className="truncate text-[13px] text-muted">
+            {parent ? `Подкатегория «${parent.name}»` : "Категория верхнего уровня"}
+          </span>
         </div>
-      </FormGroup>
+      </div>
 
-      <div className="flex justify-end gap-2">
+      <Input value={name} onChange={setName} error={nameError} autoFocus placeholder="Название" />
+
+      {parents && (
+        <Select
+          label="Внутри категории"
+          options={parentOptions}
+          value={parentId !== null ? String(parentId) : ""}
+          onChange={(v) => setParentId(v ? Number(v) : null)}
+        />
+      )}
+
+      {parentId === null ? (
+        <ColorPicker label="Цвет" value={color} onChange={setColor} />
+      ) : (
+        <p className="m-0 text-[13px] leading-snug text-muted [text-wrap:pretty]">
+          Цвет берётся от родителя: чем ниже в группе, тем светлее
+        </p>
+      )}
+
+      <IconPicker columns={8} value={icon} onChange={setIcon} color={shown} />
+
+      <div className="mt-auto flex items-center gap-2 pt-2">
+        {onDelete && (
+          <Button type="button" variant="danger" onClick={onDelete} disabled={submitting}>
+            <Trash2 size={16} strokeWidth={1.75} />
+            Удалить
+          </Button>
+        )}
+        <span className="flex-1" />
         <Button type="button" variant="ghost" onClick={onCancel} disabled={submitting}>
           Отмена
         </Button>

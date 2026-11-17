@@ -1,90 +1,80 @@
-import type { ReactNode } from "react";
+import { type KeyboardEvent, type ReactNode } from "react";
 import { motion } from "motion/react";
-import { FolderOpen } from "lucide-react";
-import { appearItem, appearList } from "@/lib/appear";
-import { getVersion } from "@tauri-apps/api/app";
+import { ArrowDownToLine, Cake, Database, Monitor, Moon, Palette, Power, Sun } from "lucide-react";
+import { settingsSectionStore, type SettingsSection } from "@/lib/settingsNav";
+import { appearList } from "@/lib/appear";
 import { appDataDir } from "@tauri-apps/api/path";
 import { openPath } from "@tauri-apps/plugin-opener";
 import { isEnabled, enable, disable } from "@tauri-apps/plugin-autostart";
-import { Mark } from "@/components/brand/Mark";
-import { Button } from "@/components/ui/Button";
-import { SegmentedControl } from "@/components/ui/SegmentedControl";
-import { Switch } from "@/components/ui/Switch";
+import { tooltip } from "@/components/ui/Tooltip";
 import { useToast } from "@/components/ui/Toast";
 import { CategoryManager } from "@/components/settings/CategoryManager";
 import { MarkTypeManager } from "@/components/settings/MarkTypeManager";
-import { BackupPanel } from "@/components/settings/BackupPanel";
-import { UpdatePanel } from "@/components/settings/UpdatePanel";
+import { BackupPanel, OpenFolderButton, PathText } from "@/components/settings/BackupPanel";
 import { ImageGenPanel } from "@/components/settings/ImageGenPanel";
+import { Row, RowList, SwitchRow } from "@/components/settings/tiles";
 import { themeStore, type ThemePref } from "@/lib/theme";
 import { closeToTrayStore } from "@/lib/behavior";
-import { notifyBirthdaysStore, notifyRemindersStore } from "@/lib/notifications";
+import { notifyBirthdaysStore } from "@/lib/notifications";
 import { useQuery } from "@/lib/useQuery";
 
-const THEME_SEGMENTS: { value: ThemePref; label: string }[] = [
-  { value: "system", label: "Системная" },
-  { value: "light", label: "Светлая" },
-  { value: "dark", label: "Тёмная" },
+const THEMES: { value: ThemePref; label: string; icon: ReactNode }[] = [
+  { value: "system", label: "Системная", icon: <Monitor size={20} strokeWidth={1.75} /> },
+  { value: "light", label: "Светлая", icon: <Sun size={20} strokeWidth={1.75} /> },
+  { value: "dark", label: "Тёмная", icon: <Moon size={20} strokeWidth={1.75} /> },
 ];
 
-function Section({
-  title,
-  description,
-  children,
-}: {
-  title: string;
-  description?: string;
-  children: ReactNode;
-}) {
-  return (
-    <motion.section {...appearItem} className="flex flex-col gap-4 rounded-4xl bg-surface-1 p-7">
-      <div>
-        <h2 className="inline-flex rounded-full bg-surface-2 px-3.5 py-1.5 text-[11px] font-medium uppercase tracking-[0.12em] text-muted">
-          {title}
-        </h2>
-        {description && <p className="mt-2.5 text-sm text-muted">{description}</p>}
-      </div>
-      {children}
-    </motion.section>
-  );
+function arrows<T>(e: KeyboardEvent<HTMLElement>, list: T[], current: T, pick: (v: T) => void) {
+  const step = e.key === "ArrowRight" ? 1 : e.key === "ArrowLeft" ? -1 : 0;
+  if (!step) return;
+  e.preventDefault();
+  const i = (list.indexOf(current) + step + list.length) % list.length;
+  pick(list[i]);
+  e.currentTarget.querySelectorAll<HTMLElement>("[role=tab], [role=radio]")[i]?.focus();
 }
 
-function Row({
-  title,
-  description,
-  children,
-}: {
-  title: string;
-  description?: string;
-  children: ReactNode;
-}) {
+function ThemePicker() {
+  const theme = themeStore.use();
   return (
-    <div className="flex items-center justify-between gap-4">
-      <div className="flex flex-col gap-0.5">
-        <span className="text-[15px] font-medium text-app-text">{title}</span>
-        {description && <span className="text-[13px] leading-snug text-muted">{description}</span>}
-      </div>
-      {children}
+    <div
+      role="radiogroup"
+      aria-label="Тема"
+      onKeyDown={(e) =>
+        arrows(
+          e,
+          THEMES.map((t) => t.value),
+          theme,
+          (v) => themeStore.set(v),
+        )
+      }
+      className="flex shrink-0 gap-1.5"
+    >
+      {THEMES.map((t) => (
+        <button
+          key={t.value}
+          type="button"
+          role="radio"
+          tabIndex={theme === t.value ? 0 : -1}
+          aria-checked={theme === t.value}
+          aria-label={t.label}
+          onClick={() => themeStore.set(t.value)}
+          {...tooltip(t.label, "bottom")}
+          className={`grid h-11 w-11 cursor-pointer place-items-center rounded-full transition-[background-color,color,scale] duration-150 ease-[var(--rg-ease)] active:scale-[0.96] ${
+            theme === t.value ? "bg-surface-active text-app-text" : "bg-surface-2 text-muted hover:bg-surface-3"
+          }`}
+        >
+          {t.icon}
+        </button>
+      ))}
     </div>
   );
 }
 
-export function SettingsPage() {
-  const theme = themeStore.use();
+function GeneralSection() {
   const closeToTray = closeToTrayStore.use() === "1";
   const notifyBirthdays = notifyBirthdaysStore.use() === "1";
-  const notifyReminders = notifyRemindersStore.use() === "1";
   const { show } = useToast();
-  const { data: version } = useQuery(getVersion);
   const { data: autostart, reload: reloadAutostart } = useQuery(isEnabled);
-
-  async function openDataFolder() {
-    try {
-      await openPath(await appDataDir());
-    } catch (e) {
-      show(String(e), "error");
-    }
-  }
 
   async function toggleAutostart(next: boolean) {
     try {
@@ -97,114 +87,95 @@ export function SettingsPage() {
   }
 
   return (
-    <div className="h-full overflow-y-auto px-10 py-10">
-      <motion.div {...appearList} className="mx-auto flex max-w-3xl flex-col gap-6">
-        <motion.div {...appearItem}>
-          <p className="m-0 mb-3 text-xs font-medium uppercase tracking-[0.24em] text-muted">
-            trail · приложение
-          </p>
-          <h1 className="m-0 text-4xl font-bold leading-none tracking-[-0.045em]">Настройки</h1>
-        </motion.div>
+    <RowList>
+      <Row icon={<Palette size={20} strokeWidth={1.75} />} title="Тема">
+        <ThemePicker />
+      </Row>
+      <SwitchRow
+        icon={<Power size={20} strokeWidth={1.75} />}
+        title="Запускать вместе с Windows"
+        checked={autostart ?? false}
+        onChange={toggleAutostart}
+      />
+      <SwitchRow
+        icon={<ArrowDownToLine size={20} strokeWidth={1.75} />}
+        title="Сворачивать в трей при закрытии"
+        description={closeToTray ? undefined : "Крестик закроет Trail — уведомления не придут"}
+        checked={closeToTray}
+        onChange={(v) => closeToTrayStore.set(v ? "1" : "0")}
+      />
+      <SwitchRow
+        icon={<Cake size={20} strokeWidth={1.75} />}
+        title="Уведомления о днях рождения"
+        checked={notifyBirthdays}
+        onChange={(v) => notifyBirthdaysStore.set(v ? "1" : "0")}
+      />
+    </RowList>
+  );
+}
 
-        <Section title="Внешний вид" description="Тема оформления приложения.">
-          <SegmentedControl
-            segments={THEME_SEGMENTS}
-            value={theme}
-            onChange={(v) => themeStore.set(v)}
-          />
-        </Section>
+function RefsSection() {
+  return (
+    <>
+      <CategoryManager />
+      <MarkTypeManager />
+    </>
+  );
+}
 
-        <Section title="Поведение">
-          <Row
-            title="Запускать при входе в Windows"
-            description="Приложение стартует свёрнутым в трей"
-          >
-            <Switch
-              checked={autostart ?? false}
-              onChange={toggleAutostart}
-              label="Запускать при входе в Windows"
-            />
-          </Row>
-          <Row
-            title="Сворачивать в трей при закрытии"
-            description="Крестик прячет окно, приложение остаётся в трее"
-          >
-            <Switch
-              checked={closeToTray}
-              onChange={(v) => closeToTrayStore.set(v ? "1" : "0")}
-              label="Сворачивать в трей при закрытии"
-            />
-          </Row>
-        </Section>
+function DataSection() {
+  const { show } = useToast();
+  const { data: dataDir } = useQuery(appDataDir);
 
-        <Section title="Уведомления">
-          <Row
-            title="Напоминать о днях рождения"
-            description="Windows-уведомление в день рождения, пока приложение запущено"
-          >
-            <Switch
-              checked={notifyBirthdays}
-              onChange={(v) => notifyBirthdaysStore.set(v ? "1" : "0")}
-              label="Напоминать о днях рождения"
-            />
-          </Row>
-          <Row
-            title="Уведомления о напоминаниях"
-            description="Срабатывания, пропущенные и предварительные оповещения раздела «Напоминания»"
-          >
-            <Switch
-              checked={notifyReminders}
-              onChange={(v) => notifyRemindersStore.set(v ? "1" : "0")}
-              label="Уведомления о напоминаниях"
-            />
-          </Row>
-        </Section>
+  async function openDataFolder() {
+    try {
+      await openPath(await appDataDir());
+    } catch (e) {
+      show(String(e), "error");
+    }
+  }
 
-        <Section
-          title="Картинки"
-          description="Иллюстрация к событию по названию, заметке и категории. Сцену придумывает Gemini через OpenRouter, без ключа — Cloudflare или локальная LM Studio."
+  return (
+    <>
+      <BackupPanel />
+      <RowList title="На диске">
+        <Row
+          icon={<Database size={20} strokeWidth={1.75} />}
+          title="Папка данных"
+          description={<PathText path={dataDir ?? ""} />}
         >
-          <ImageGenPanel />
-        </Section>
+          <OpenFolderButton onClick={openDataFolder} />
+        </Row>
+      </RowList>
+    </>
+  );
+}
 
-        <Section title="Обновления" description="Новые версии скачиваются с GitHub в фоне и ставятся при перезапуске.">
-          <UpdatePanel />
-        </Section>
+const BODIES: Record<SettingsSection, () => ReactNode> = {
+  general: GeneralSection,
+  refs: RefsSection,
+  images: ImageGenPanel,
+  data: DataSection,
+};
 
-        <Section title="Бэкап" description="Архив с базой и фотографиями в выбранной папке.">
-          <BackupPanel />
-        </Section>
+export function SettingsPage() {
+  const section = settingsSectionStore.use();
+  const Body = BODIES[section] ?? GeneralSection;
 
-        <Section title="Данные" description="База и медиа хранятся в папке приложения.">
-          <div>
-            <Button variant="secondary" onClick={openDataFolder}>
-              <FolderOpen size={15} strokeWidth={1.75} />
-              Открыть папку данных
-            </Button>
-          </div>
-        </Section>
-
-        <Section title="Справочники" description="Категории событий и типы быстрых отметок.">
-          <CategoryManager />
-          <MarkTypeManager />
-        </Section>
-
-        <motion.section {...appearItem} className="flex items-center gap-5 rounded-4xl bg-amber p-7 text-ink">
-          <span className="grid h-16 w-16 shrink-0 place-items-center rounded-full bg-ink">
-            <Mark size={40} />
-          </span>
-          <div className="min-w-0">
-            <p className="m-0 text-[28px] font-bold leading-none tracking-tight">Trail</p>
-            <p className="m-0 mt-1.5 text-sm opacity-70">Личный таймлайн жизни</p>
-          </div>
-          <span
-            className="ml-auto shrink-0 rounded-full px-3.5 py-1.5 text-xs font-semibold tabular-nums"
-            style={{ background: "color-mix(in srgb, var(--ds-on-accent) 12%, transparent)" }}
-          >
-            версия {version ?? "—"}
-          </span>
-        </motion.section>
-      </motion.div>
+  return (
+    <div className="h-full overflow-y-auto px-12 pb-12 pt-10">
+      <div className="mx-auto flex max-w-[840px] flex-col gap-7">
+        <motion.div
+          key={section}
+          {...appearList}
+          id="settings-panel"
+          role="tabpanel"
+          aria-labelledby={`settings-tab-${section}`}
+          className="flex flex-col gap-7"
+        >
+          <Body />
+        </motion.div>
+      </div>
     </div>
   );
 }

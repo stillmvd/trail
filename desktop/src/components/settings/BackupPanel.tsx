@@ -1,10 +1,13 @@
-import { useState, type ReactNode } from "react";
-import { FolderOpen, Archive, RotateCcw, ExternalLink } from "lucide-react";
+import { useState } from "react";
+import { AnimatePresence, motion } from "motion/react";
+import { Archive, CalendarClock, ExternalLink, FolderOpen, HardDriveDownload, Layers, RotateCcw } from "lucide-react";
 import { open } from "@tauri-apps/plugin-dialog";
 import { openPath } from "@tauri-apps/plugin-opener";
 import { useQuery } from "@/lib/useQuery";
+import { pluralRu } from "@/lib/duration";
 import { Button } from "@/components/ui/Button";
-import { Switch } from "@/components/ui/Switch";
+import { ActionRow, Row, RowList, SwitchRow } from "@/components/settings/tiles";
+import { tooltip } from "@/components/ui/Tooltip";
 import { SegmentedControl } from "@/components/ui/SegmentedControl";
 import { Select } from "@/components/ui/Select";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
@@ -22,6 +25,8 @@ import {
   type BackupInterval,
 } from "@/lib/backup";
 
+const ICON = { size: 20, strokeWidth: 1.75 };
+
 const INTERVAL_SEGMENTS: { value: BackupInterval; label: string }[] = [
   { value: "day", label: "Раз в день" },
   { value: "week", label: "Раз в неделю" },
@@ -29,26 +34,35 @@ const INTERVAL_SEGMENTS: { value: BackupInterval; label: string }[] = [
 
 const KEEP_OPTIONS = [3, 5, 10, 20].map((n) => ({
   value: String(n),
-  label: `${n}`,
+  label: `${n} ${pluralRu(n, ["бэкап", "бэкапа", "бэкапов"])}`,
 }));
 
-function Row({
-  title,
-  description,
-  children,
-}: {
-  title: string;
-  description?: string;
-  children: ReactNode;
-}) {
+const REVEAL = {
+  initial: { height: 0, opacity: 0 },
+  animate: { height: "auto", opacity: 1 },
+  exit: { height: 0, opacity: 0 },
+  transition: { type: "spring" as const, bounce: 0, duration: 0.34 },
+};
+
+export function PathText({ path }: { path: string }) {
   return (
-    <div className="flex items-center justify-between gap-4">
-      <div className="flex flex-col">
-        <span className="text-sm text-app-text">{title}</span>
-        {description && <span className="text-xs text-muted">{description}</span>}
-      </div>
-      {children}
-    </div>
+    <span {...(path ? tooltip(path, "bottom") : {})} className="block truncate">
+      {path || "—"}
+    </span>
+  );
+}
+
+export function OpenFolderButton({ onClick }: { onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      aria-label="Открыть папку"
+      onClick={onClick}
+      {...tooltip("Открыть папку", "bottom")}
+      className="grid h-11 w-11 shrink-0 cursor-pointer place-items-center rounded-full bg-surface-2 text-muted transition-[background-color,color,scale] duration-150 ease-[var(--rg-ease)] hover:bg-surface-3 hover:text-app-text active:scale-[0.96]"
+    >
+      <ExternalLink size={18} strokeWidth={1.75} />
+    </button>
   );
 }
 
@@ -66,6 +80,9 @@ export function BackupPanel() {
   const [pendingRestore, setPendingRestore] = useState<string | null>(null);
 
   const shownDir = dir || fallbackDir || "";
+  const lastText = last
+    ? `Последний — ${new Date(Number(last)).toLocaleString("ru-RU", { dateStyle: "short", timeStyle: "short" })}`
+    : "Ещё не делался";
 
   async function pickDir() {
     const picked = await open({ directory: true, title: "Папка для бэкапов" });
@@ -112,72 +129,60 @@ export function BackupPanel() {
   }
 
   return (
-    <div className="flex flex-col gap-3">
-      <Row
-        title="Автоматический бэкап"
-        description={
-          last
-            ? `Последний: ${new Date(Number(last)).toLocaleString("ru-RU")}`
-            : "Ещё не выполнялся"
-        }
-      >
-        <Switch
+    <>
+      <RowList title="Бэкап">
+        <SwitchRow
+          icon={<Archive {...ICON} />}
+          title="Делать автоматически"
+          description={lastText}
           checked={enabled}
           onChange={(v) => backupEnabledStore.set(v ? "1" : "0")}
-          label="Автоматический бэкап"
         />
-      </Row>
-
-      <div className="flex flex-col gap-1">
-        <span className="text-xs font-medium text-muted">
-          Папка для бэкапов{!dir && " (по умолчанию)"}
-        </span>
-        <div className="flex items-center gap-2">
-          <span
-            title={shownDir}
-            className="min-w-0 flex-1 truncate rounded-full bg-surface-2 px-4 py-2.5 text-sm text-app-text"
-          >
-            {shownDir || "—"}
-          </span>
-          <Button variant="secondary" onClick={pickDir}>
-            <FolderOpen size={15} strokeWidth={1.75} />
-            Выбрать
-          </Button>
-          {(dir || last) && (
-            <Button variant="ghost" onClick={openBackupDir}>
-              <ExternalLink size={15} strokeWidth={1.75} />
-              Открыть
-            </Button>
+        <AnimatePresence initial={false}>
+          {enabled && (
+            <motion.div key="interval" {...REVEAL} className="relative overflow-hidden">
+              <Row icon={<CalendarClock {...ICON} />} title="Как часто">
+                <div className="w-[260px] shrink-0">
+                  <SegmentedControl
+                    segments={INTERVAL_SEGMENTS}
+                    value={interval}
+                    onChange={(v) => backupIntervalStore.set(v)}
+                  />
+                </div>
+              </Row>
+            </motion.div>
           )}
-        </div>
-      </div>
+        </AnimatePresence>
+        <Row icon={<Layers {...ICON} />} title="Сколько хранить" description="Самые старые удаляются">
+          <div className="w-40 shrink-0">
+            <Select options={KEEP_OPTIONS} value={keep} onChange={(v) => backupKeepStore.set(v)} />
+          </div>
+        </Row>
+        <Row icon={<FolderOpen {...ICON} />} title="Папка бэкапов" description={<PathText path={shownDir} />}>
+          <div className="flex shrink-0 items-center gap-2">
+            <Button variant="secondary" onClick={pickDir}>
+              Изменить
+            </Button>
+            <OpenFolderButton onClick={openBackupDir} />
+          </div>
+        </Row>
+      </RowList>
 
-      <div className="flex flex-col gap-1">
-        <span className="text-xs font-medium text-muted">Как часто</span>
-        <SegmentedControl
-          segments={INTERVAL_SEGMENTS}
-          value={interval}
-          onChange={(v) => backupIntervalStore.set(v)}
+      <RowList title="Вручную">
+        <ActionRow
+          icon={<HardDriveDownload {...ICON} />}
+          title="Сделать бэкап сейчас"
+          disabled={busy}
+          onClick={backupNow}
         />
-      </div>
-
-      <Select
-        label="Хранить последних архивов"
-        options={KEEP_OPTIONS}
-        value={keep}
-        onChange={(v) => backupKeepStore.set(v)}
-      />
-
-      <div className="mt-1 flex gap-2">
-        <Button variant="secondary" onClick={backupNow} disabled={busy}>
-          <Archive size={15} strokeWidth={1.75} />
-          Сделать бэкап сейчас
-        </Button>
-        <Button variant="ghost" onClick={pickRestore} disabled={busy}>
-          <RotateCcw size={15} strokeWidth={1.75} />
-          Восстановить из файла
-        </Button>
-      </div>
+        <ActionRow
+          icon={<RotateCcw {...ICON} />}
+          title="Восстановить из бэкапа"
+          description="Текущие данные заменятся, Trail перезапустится"
+          disabled={busy}
+          onClick={pickRestore}
+        />
+      </RowList>
 
       <ConfirmDialog
         open={pendingRestore !== null}
@@ -187,6 +192,6 @@ export function BackupPanel() {
         onConfirm={doRestore}
         onClose={() => setPendingRestore(null)}
       />
-    </div>
+    </>
   );
 }

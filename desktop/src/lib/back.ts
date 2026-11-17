@@ -25,7 +25,7 @@ export function useBackButton(mode: ViewMode) {
 
   useEffect(() => {
     if (mode === last.current) return;
-    if (!returning.current) history.current.push(last.current);
+    if (!returning.current && last.current !== "settings") history.current.push(last.current);
     returning.current = false;
     last.current = mode;
   }, [mode]);

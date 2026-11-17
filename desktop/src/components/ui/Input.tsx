@@ -6,12 +6,14 @@ export function Input({
   onChange,
   error,
   className = "",
+  raised = false,
   ...rest
 }: {
   label?: string;
   value: string;
   onChange: (value: string) => void;
   error?: string;
+  raised?: boolean;
 } & Omit<InputHTMLAttributes<HTMLInputElement>, "value" | "onChange">) {
   return (
     <label className="flex flex-col gap-1">
@@ -19,7 +21,7 @@ export function Input({
       <input
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className={`h-11 rounded-full bg-surface-2 px-4 text-sm text-app-text outline-none placeholder:text-muted ${
+        className={`h-11 rounded-full ${raised ? "bg-surface-3" : "bg-surface-2"} px-4 text-sm text-app-text outline-none placeholder:text-muted ${
           error ? "shadow-[inset_0_0_0_1.5px_var(--ds-danger)]" : ""
         } ${className}`}
         {...rest}
