@@ -13,31 +13,31 @@
     "ship": "ship"
   },
   "dependencies": {
-    "@stillmvd/tauri-ship": "github:stillmvd/tauri-ship#v0.1.1",
-    "@tauri-apps/api": "^2.12.0",
-    "@tauri-apps/plugin-autostart": "^2.5.1",
-    "@tauri-apps/plugin-dialog": "^2.7.1",
-    "@tauri-apps/plugin-http": "~2.5.9",
-    "@tauri-apps/plugin-notification": "^2.3.3",
-    "@tauri-apps/plugin-opener": "^2",
-    "@tauri-apps/plugin-process": "^2.3.1",
-    "@tauri-apps/plugin-sql": "^2.4.0",
+    "@stillmvd/tauri-ship": "github:stillmvd/tauri-ship#v0.1.4",
+    "@tauri-apps/api": "^2.12.5",
+    "@tauri-apps/plugin-autostart": "^2.7.0",
+    "@tauri-apps/plugin-dialog": "^2.8.4",
+    "@tauri-apps/plugin-http": "^2.9.0",
+    "@tauri-apps/plugin-notification": "^2.8.1",
+    "@tauri-apps/plugin-opener": "^2.7.3",
+    "@tauri-apps/plugin-process": "^2.4.0",
+    "@tauri-apps/plugin-sql": "^2.6.0",
     "date-fns": "^4.4.0",
-    "lucide-react": "^0.460.0",
-    "motion": "^12.42.2",
-    "react": "^19.1.0",
-    "react-day-picker": "^10.0.1",
-    "react-dom": "^19.1.0"
+    "lucide-react": "^1.73.0",
+    "motion": "^14.14.0",
+    "react": "^19.3.1",
+    "react-day-picker": "^10.0.2",
+    "react-dom": "^19.3.1"
   },
   "devDependencies": {
-    "@tailwindcss/vite": "^4.3.2",
+    "@tailwindcss/vite": "^4.3.5",
     "@tauri-apps/cli": "2.11.5",
-    "@types/react": "^19.1.8",
-    "@types/react-dom": "^19.1.6",
-    "@vitejs/plugin-react": "^4.6.0",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.3.0",
     "agentation": "^3.1.2",
-    "tailwindcss": "^4.3.0",
-    "typescript": "~5.8.3",
-    "vite": "^7.0.4"
+    "tailwindcss": "^4.3.5",
+    "typescript": "~7.0.2",
+    "vite": "^8.3.8"
   }
 }
