@@ -1,4 +1,3 @@
-import { useEffect } from "react";
 import {
   Waypoints,
   LayoutGrid,
@@ -25,13 +24,11 @@ const DESTINATIONS: { value: ViewMode; label: string; icon: LucideIcon }[] = [
 
 function RailButton({
   label,
-  hint,
   icon: Icon,
   active,
   onClick,
 }: {
   label: string;
-  hint: string;
   icon: LucideIcon;
   active?: boolean;
   onClick: () => void;
@@ -41,8 +38,7 @@ function RailButton({
       type="button"
       onClick={onClick}
       aria-label={label}
-      aria-keyshortcuts={hint.replace("Ctrl", "Control")}
-      {...tooltip(`${label} · ${hint}`)}
+      {...tooltip(label)}
       aria-current={active ? "page" : undefined}
       className={`relative flex h-11 w-11 cursor-pointer items-center justify-center rounded-full transition-[background-color,color,scale] duration-150 ease-[var(--rg-ease)] active:scale-[0.96] ${
         active
@@ -55,52 +51,29 @@ function RailButton({
   );
 }
 
-const ORDER: ViewMode[] = [...DESTINATIONS.map((d) => d.value), "settings"];
-
-const go = (value: ViewMode) => modeStore.set(value);
-
 export function NavigationRail() {
   const mode = modeStore.use();
-
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (!(e.ctrlKey || e.metaKey) || e.altKey || e.shiftKey) return;
-      const index = /^Digit([1-7])$/.exec(e.code)?.[1];
-      if (!index || searchOpenStore.get() || document.querySelector("[aria-modal='true']")) return;
-      e.preventDefault();
-      go(ORDER[Number(index) - 1]);
-    };
-    document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
-  }, []);
 
   return (
     <nav
       aria-label="Основная навигация"
       className="flex h-full w-[4.5rem] shrink-0 flex-col items-center gap-1.5 border-r border-line bg-surface-0 py-5"
     >
-      {DESTINATIONS.map(({ value, label, icon }, i) => (
+      {DESTINATIONS.map(({ value, label, icon }) => (
         <RailButton
           key={value}
           label={label}
-          hint={`Ctrl+${i + 1}`}
           icon={icon}
           active={mode === value}
-          onClick={() => go(value)}
+          onClick={() => modeStore.set(value)}
         />
       ))}
 
       <div className="flex-1" />
 
-      <RailButton
-        label="Поиск"
-        hint="/"
-        icon={Search}
-        onClick={() => searchOpenStore.set(true)}
-      />
+      <RailButton label="Поиск" icon={Search} onClick={() => searchOpenStore.set(true)} />
       <RailButton
         label="Настройки"
-        hint={`Ctrl+${ORDER.length}`}
         icon={Settings}
         active={mode === "settings"}
         onClick={() => modeStore.set("settings")}
