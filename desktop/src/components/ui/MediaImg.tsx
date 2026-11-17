@@ -4,11 +4,13 @@ import { mediaSrc, thumbSrc } from "@/lib/paths";
 export function MediaImg({
   path,
   full,
+  lazy,
   className,
   style,
 }: {
   path: string;
   full?: boolean;
+  lazy?: boolean;
   className?: string;
   style?: CSSProperties;
 }) {
@@ -18,7 +20,8 @@ export function MediaImg({
     <img
       src={useThumb ? thumbSrc(path) : mediaSrc(path)}
       alt=""
-      decoding={useThumb ? "sync" : "async"}
+      loading={lazy ? "lazy" : undefined}
+      decoding={useThumb && !lazy ? "sync" : "async"}
       onError={() => useThumb && setFailed(path)}
       className={className}
       style={style}

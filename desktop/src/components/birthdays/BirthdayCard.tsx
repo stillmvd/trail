@@ -38,7 +38,7 @@ export function BirthdayCard({
 
       <div className="relative aspect-[4/3.4] w-full overflow-hidden">
         {person.photo ? (
-          <MediaImg path={person.photo} className="h-full w-full object-cover" />
+          <MediaImg path={person.photo} lazy className="h-full w-full object-cover" />
         ) : (
           <PersonPlaceholder />
         )}

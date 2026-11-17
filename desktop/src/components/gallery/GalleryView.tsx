@@ -1,4 +1,4 @@
-import { useMemo, useRef } from "react";
+import { useMemo, useRef, type CSSProperties } from "react";
 import { motion } from "motion/react";
 import { Images } from "lucide-react";
 import { appear } from "@/lib/appear";
@@ -12,6 +12,21 @@ import type { TimelineEvent } from "@/db/queries/events";
 const capitalize = (s: string) => (s ? s[0].toUpperCase() + s.slice(1) : s);
 const byDateDesc = (a: TimelineEvent, b: TimelineEvent) =>
   a.date < b.date ? 1 : a.date > b.date ? -1 : b.id - a.id;
+
+const EAGER_GROUPS = 2;
+const APPEAR_CARDS = 12;
+const COLS_GUESS = 4;
+const CARD_H_GUESS = 330;
+const GAP = 20;
+const HEADER_H = 52;
+
+const deferredSection = (count: number): CSSProperties => {
+  const rows = Math.ceil(count / COLS_GUESS);
+  return {
+    contentVisibility: "auto",
+    containIntrinsicSize: `auto none auto ${HEADER_H + rows * CARD_H_GUESS + (rows - 1) * GAP}px`,
+  };
+};
 
 type MonthGroup = {
   key: string;
@@ -90,7 +105,12 @@ export function GalleryView({
       >
         <div className="mx-auto max-w-6xl">
           {groups.map((group, gi) => (
-            <section key={group.key} data-scrubber-key={group.key} className="mb-12">
+            <section
+              key={group.key}
+              data-scrubber-key={group.key}
+              className="mb-12"
+              style={gi < EAGER_GROUPS ? undefined : deferredSection(group.events.length)}
+            >
               <div className="sticky top-0 z-30 mb-4 flex justify-center">
                 <h2
                   className="m-0 inline-flex items-center gap-2 rounded-full bg-surface-2 px-4 py-2 text-xs font-medium uppercase tracking-[0.12em] text-muted backdrop-blur"
@@ -106,11 +126,26 @@ export function GalleryView({
                 </h2>
               </div>
               <div className="grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-5">
-                {group.events.map((event, i) => (
-                  <motion.div key={event.id} {...appear(starts[gi] + i)} className="grid">
-                    <EventCard event={event} highlight={gi === 0 && i === 0} onClick={onEventClick} />
-                  </motion.div>
-                ))}
+                {group.events.map((event, i) => {
+                  const n = starts[gi] + i;
+                  const card = (
+                    <EventCard
+                      event={event}
+                      highlight={gi === 0 && i === 0}
+                      eager={n < APPEAR_CARDS}
+                      onClick={onEventClick}
+                    />
+                  );
+                  return n < APPEAR_CARDS ? (
+                    <motion.div key={event.id} {...appear(n)} className="grid">
+                      {card}
+                    </motion.div>
+                  ) : (
+                    <div key={event.id} className="grid">
+                      {card}
+                    </div>
+                  );
+                })}
               </div>
             </section>
           ))}

@@ -75,7 +75,7 @@ export function TrackingCard({
       <div className="relative aspect-video w-full overflow-hidden rounded-b-4xl">
         <DropHint />
         {event.cover ? (
-          <MediaImg path={event.cover} className="h-full w-full object-cover" />
+          <MediaImg path={event.cover} lazy className="h-full w-full object-cover" />
         ) : (
           <CoverPlaceholder fill={accent.fill} icon={event.category_icon} onAccent={highlight} />
         )}

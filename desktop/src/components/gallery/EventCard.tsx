@@ -16,10 +16,12 @@ const ELEVATION_2 = "var(--ds-shadow-2)";
 export function EventCard({
   event,
   highlight,
+  eager,
   onClick,
 }: {
   event: TimelineEvent;
   highlight?: boolean;
+  eager?: boolean;
   onClick: (event: TimelineEvent) => void;
 }) {
   const accent = eventAccent(event);
@@ -51,6 +53,7 @@ export function EventCard({
         {event.cover ? (
           <MediaImg
             path={event.cover}
+            lazy={!eager}
             className="h-full w-full object-cover"
             style={{ opacity: future ? 0.6 : undefined }}
           />
