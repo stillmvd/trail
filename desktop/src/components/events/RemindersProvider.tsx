@@ -4,7 +4,6 @@ import { useToast } from "@/components/ui/Toast";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { bumpDataVersion } from "@/lib/dataVersion";
 import { modeStore } from "@/lib/mode";
-import { showDigestFeed } from "@/lib/digest/stores";
 import { snoozePlusHour, nextOccurrence, nowLocalMinuteISO } from "@/lib/reminders";
 import { getQueryData, setQueryData, revalidateQuery } from "@/lib/useQuery";
 import { TIMELINE_MIN_DATE, TIMELINE_MAX_DATE, isValidISODate } from "@/lib/constants";
@@ -26,7 +25,7 @@ import {
   type ReminderInput,
 } from "@/db/queries/reminders";
 
-type NotificationAction = { kind: "reminder" | "birthday" | "digest" | "imagegen"; id: number; action: string };
+type NotificationAction = { kind: "reminder" | "birthday" | "imagegen"; id: number; action: string };
 
 type RemindersCtx = {
   addReminder: (input: ReminderInput) => Promise<boolean>;
@@ -84,10 +83,6 @@ export function RemindersProvider({ children }: { children: ReactNode }) {
     const unlisten = listen<NotificationAction>("notification-action", async ({ payload }) => {
       if (payload.kind === "birthday") {
         modeStore.set("birthdays");
-        return;
-      }
-      if (payload.kind === "digest") {
-        showDigestFeed();
         return;
       }
       if (payload.kind === "imagegen") return;

@@ -20,8 +20,6 @@ import { themeStore, type ThemePref } from "@/lib/theme";
 import { closeToTrayStore } from "@/lib/behavior";
 import { notifyBirthdaysStore, notifyRemindersStore } from "@/lib/notifications";
 import { useQuery } from "@/lib/useQuery";
-import { modeStore } from "@/lib/mode";
-import { openDigestSettings } from "@/lib/digest/stores";
 
 const THEME_SEGMENTS: { value: ThemePref; label: string }[] = [
   { value: "system", label: "Системная" },
@@ -159,20 +157,6 @@ export function SettingsPage() {
               onChange={(v) => notifyRemindersStore.set(v ? "1" : "0")}
               label="Уведомления о напоминаниях"
             />
-          </Row>
-        </Section>
-
-        <Section title="Сводка">
-          <Row title="Настройки сводки" description="Интересы, источники, ключ OpenRouter, время сбора и хранение">
-            <Button
-              variant="secondary"
-              onClick={() => {
-                openDigestSettings();
-                modeStore.set("digest");
-              }}
-            >
-              Открыть
-            </Button>
           </Row>
         </Section>
 

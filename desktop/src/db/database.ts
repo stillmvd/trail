@@ -58,7 +58,19 @@ async function migrate(db: Database): Promise<void> {
     await db.execute("CREATE INDEX IF NOT EXISTS idx_marks_date ON marks(date)");
     await db.execute("CREATE INDEX IF NOT EXISTS idx_marks_type ON marks(mark_type_id)");
   }
+  for (const table of DIGEST_TABLES) await db.execute(`DROP TABLE IF EXISTS ${table}`);
+  await db.execute("DELETE FROM settings WHERE key LIKE 'digest\\_%' ESCAPE '\\'");
 }
+
+const DIGEST_TABLES = [
+  "digest_entries",
+  "digest_reactions",
+  "digest_saved",
+  "digest_items",
+  "digests",
+  "digest_sources",
+  "digest_bans",
+];
 
 async function hasColumn(db: Database, table: string, column: string): Promise<boolean> {
   const rows = await db.select<{ name: string }[]>(`PRAGMA table_info(${table})`);

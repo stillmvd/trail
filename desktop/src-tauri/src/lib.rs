@@ -108,96 +108,6 @@ fn delete_media_thumb(app: tauri::AppHandle, name: String) -> Result<(), String>
     Ok(())
 }
 
-fn digest_cache_dir(app: &tauri::AppHandle) -> Result<std::path::PathBuf, String> {
-    Ok(app
-        .path()
-        .app_data_dir()
-        .map_err(|e| e.to_string())?
-        .join("digest-cache"))
-}
-
-#[tauri::command]
-fn save_digest_preview(app: tauri::AppHandle, request: tauri::ipc::Request<'_>) -> Result<String, String> {
-    let (name, data) = raw_upload(&request)?;
-    let dir = digest_cache_dir(&app)?;
-    fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
-    fs::write(dir.join(&name), data).map_err(|e| e.to_string())?;
-    Ok(name)
-}
-
-#[tauri::command]
-fn prune_digest_previews(app: tauri::AppHandle, names: Vec<String>) -> Result<(), String> {
-    let dir = digest_cache_dir(&app)?;
-    for name in names {
-        let _ = fs::remove_file(dir.join(name));
-    }
-    Ok(())
-}
-
-#[tauri::command]
-fn list_digest_previews(app: tauri::AppHandle) -> Result<Vec<String>, String> {
-    let Ok(entries) = fs::read_dir(digest_cache_dir(&app)?) else {
-        return Ok(Vec::new());
-    };
-    Ok(entries
-        .filter_map(|e| e.ok()?.file_name().into_string().ok())
-        .collect())
-}
-
-fn is_web_url(url: &str) -> bool {
-    let lower = url.to_ascii_lowercase();
-    (lower.starts_with("https://") || lower.starts_with("http://"))
-        && !url.chars().any(|c| c.is_control() || c == '"')
-}
-
-fn exe_from_command(command: &str) -> std::path::PathBuf {
-    let command = command.trim();
-    std::path::PathBuf::from(match command.strip_prefix('"') {
-        Some(rest) => rest.split('"').next().unwrap_or(rest),
-        None => command
-            .to_ascii_lowercase()
-            .find(".exe")
-            .map_or(command, |i| &command[..i + 4]),
-    })
-}
-
-#[cfg(windows)]
-fn chrome_exe() -> Option<std::path::PathBuf> {
-    use std::path::PathBuf;
-    let from_registry = windows_registry::LOCAL_MACHINE
-        .open(r"SOFTWARE\Clients\StartMenuInternet\Google Chrome\shell\open\command")
-        .and_then(|key| key.get_string(""))
-        .ok()
-        .map(|command| exe_from_command(&command));
-    let fallbacks = ["ProgramFiles", "ProgramFiles(x86)", "LOCALAPPDATA"]
-        .into_iter()
-        .filter_map(std::env::var_os)
-        .map(|base| PathBuf::from(base).join(r"Google\Chrome\Application\chrome.exe"));
-    from_registry.into_iter().chain(fallbacks).find(|path| path.is_file())
-}
-
-#[cfg(not(windows))]
-fn chrome_exe() -> Option<std::path::PathBuf> {
-    None
-}
-
-#[tauri::command]
-fn open_in_chrome(url: String) -> Result<(), String> {
-    if !is_web_url(&url) {
-        return Err("Недопустимый адрес".into());
-    }
-    let exe = chrome_exe().ok_or("Chrome не найден")?;
-    let mut cmd = std::process::Command::new(exe);
-    cmd.args(["--profile-directory=Default", url.as_str()]);
-    #[cfg(windows)]
-    {
-        use std::os::windows::process::CommandExt;
-        const CREATE_NO_WINDOW: u32 = 0x0800_0000;
-        cmd.creation_flags(CREATE_NO_WINDOW);
-    }
-    cmd.spawn().map(|_| ()).map_err(|e| e.to_string())
-}
-
 #[tauri::command]
 fn delete_media(app: tauri::AppHandle, name: String) -> Result<(), String> {
     let name = safe_name(&name)?;
@@ -439,11 +349,10 @@ fn setup_tray(app: &tauri::App) -> tauri::Result<()> {
     use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
 
     let open = MenuItem::with_id(app, "open", "Открыть", true, None::<&str>)?;
-    let digest = MenuItem::with_id(app, "digest", "Сводка", true, None::<&str>)?;
     let add_reminder =
         MenuItem::with_id(app, "add_reminder", "Добавить напоминание", true, None::<&str>)?;
     let quit = MenuItem::with_id(app, "quit", "Выход", true, None::<&str>)?;
-    let menu = Menu::with_items(app, &[&open, &digest, &add_reminder, &quit])?;
+    let menu = Menu::with_items(app, &[&open, &add_reminder, &quit])?;
 
     TrayIconBuilder::with_id("main")
         .icon(tray_image()?)
@@ -452,11 +361,6 @@ fn setup_tray(app: &tauri::App) -> tauri::Result<()> {
         .show_menu_on_left_click(false)
         .on_menu_event(|app, event| match event.id.as_ref() {
             "open" => show_main(app),
-            "digest" => {
-                show_main(app);
-                use tauri::Emitter;
-                let _ = app.emit("open-digest", ());
-            }
             "add_reminder" => {
                 show_main(app);
                 use tauri::Emitter;
@@ -642,10 +546,6 @@ pub fn run() {
             snapshot_media,
             list_media_files,
             delete_media_thumb,
-            save_digest_preview,
-            prune_digest_previews,
-            list_digest_previews,
-            open_in_chrome,
             create_backup,
             restore_backup,
             #[cfg(windows)]
@@ -653,6 +553,10 @@ pub fn run() {
         ])
         .setup(|app| {
             migrate_legacy_app_data(app);
+            // TODO: удалить после 1.0 — превью удалённой «Сводки».
+            if let Ok(dir) = app.path().app_data_dir() {
+                let _ = fs::remove_dir_all(dir.join("digest-cache"));
+            }
             setup_tray(app)?;
 
             // Автостарт поднимает приложение с --minimized: живёт в трее, окно не показываем.
@@ -676,33 +580,4 @@ pub fn run() {
                 comfy_kill(&app.state::<Comfy>());
             }
         });
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use std::path::PathBuf;
-
-    #[test]
-    fn web_url_accepts_only_http_and_https() {
-        assert!(is_web_url("https://habr.com/ru/articles/1/"));
-        assert!(is_web_url("HTTP://example.com"));
-        assert!(!is_web_url("file:///C:/Windows/system32/calc.exe"));
-        assert!(!is_web_url("--disable-web-security"));
-        assert!(!is_web_url("https://a.com/\" --flag"));
-        assert!(!is_web_url("https://a.com/\nx"));
-    }
-
-    #[test]
-    fn exe_from_command_handles_quoted_and_bare_paths() {
-        assert_eq!(
-            exe_from_command(r#""C:\Program Files\Google\Chrome\Application\chrome.exe" -- "%1""#),
-            PathBuf::from(r"C:\Program Files\Google\Chrome\Application\chrome.exe")
-        );
-        assert_eq!(
-            exe_from_command(r"C:\Chrome\chrome.EXE --single-argument %1"),
-            PathBuf::from(r"C:\Chrome\chrome.EXE")
-        );
-        assert_eq!(exe_from_command("no-exe-here"), PathBuf::from("no-exe-here"));
-    }
 }

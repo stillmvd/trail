@@ -17,7 +17,6 @@ import { useBackButton } from "./lib/back";
 import { useCloseToTray } from "./lib/behavior";
 import { useNotifications } from "./lib/notifications";
 import { useAutoBackup } from "./lib/backup";
-import { useDigestScheduler } from "./lib/digest/scheduler";
 import { usePrefetchPages } from "./lib/prefetch";
 import { SettingsPage } from "./pages/SettingsPage";
 import { GalleryPage } from "./pages/GalleryPage";
@@ -25,7 +24,6 @@ import { CalendarPage } from "./pages/CalendarPage";
 import { TrackingPage } from "./pages/TrackingPage";
 import { RemindersPage } from "./pages/RemindersPage";
 import { BirthdaysPage } from "./pages/BirthdaysPage";
-import { DigestPage } from "./pages/DigestPage";
 import { TimelinePage } from "./pages/TimelinePage";
 
 const PAGES: Record<ViewMode, ComponentType> = {
@@ -35,7 +33,6 @@ const PAGES: Record<ViewMode, ComponentType> = {
   tracking: TrackingPage,
   reminders: RemindersPage,
   birthdays: BirthdaysPage,
-  digest: DigestPage,
   settings: SettingsPage,
 };
 
@@ -48,7 +45,6 @@ export default function App() {
   useCloseToTray();
   useNotifications();
   useAutoBackup();
-  useDigestScheduler();
   usePrefetchPages();
   const mode = modeStore.use();
   useBackButton(mode);

@@ -30,7 +30,6 @@
       "allow": [
         { "url": "https://api.cloudflare.com/*" },
         { "url": "https://openrouter.ai/*" },
-        { "url": "https://*/*" },
         { "url": "http://127.0.0.1:*/*" },
         { "url": "http://localhost:*/*" }
       ]

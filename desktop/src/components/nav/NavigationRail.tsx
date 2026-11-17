@@ -6,7 +6,6 @@ import {
   Target,
   Bell,
   Cake,
-  Newspaper,
   Search,
   Settings,
   type LucideIcon,
@@ -14,7 +13,6 @@ import {
 import { tooltip } from "@/components/ui/Tooltip";
 import { modeStore, type ViewMode } from "../../lib/mode";
 import { searchOpenStore } from "../../lib/search";
-import { digestUnseenStore, showDigestFeed } from "../../lib/digest/stores";
 
 const DESTINATIONS: { value: ViewMode; label: string; icon: LucideIcon }[] = [
   { value: "timeline", label: "Таймлайн", icon: Waypoints },
@@ -23,7 +21,6 @@ const DESTINATIONS: { value: ViewMode; label: string; icon: LucideIcon }[] = [
   { value: "tracking", label: "Отслеживание", icon: Target },
   { value: "reminders", label: "Напоминания", icon: Bell },
   { value: "birthdays", label: "Дни рождения", icon: Cake },
-  { value: "digest", label: "Сводка", icon: Newspaper },
 ];
 
 function RailButton({
@@ -31,14 +28,12 @@ function RailButton({
   hint,
   icon: Icon,
   active,
-  dot,
   onClick,
 }: {
   label: string;
   hint: string;
   icon: LucideIcon;
   active?: boolean;
-  dot?: boolean;
   onClick: () => void;
 }) {
   return (
@@ -56,23 +51,21 @@ function RailButton({
       }`}
     >
       <Icon size={20} strokeWidth={1.75} />
-      {dot && !active && <span className="absolute top-2 right-2 h-2 w-2 rounded-full bg-amber" />}
     </button>
   );
 }
 
 const ORDER: ViewMode[] = [...DESTINATIONS.map((d) => d.value), "settings"];
 
-const go = (value: ViewMode) => (value === "digest" ? showDigestFeed() : modeStore.set(value));
+const go = (value: ViewMode) => modeStore.set(value);
 
 export function NavigationRail() {
   const mode = modeStore.use();
-  const digestUnseen = digestUnseenStore.use();
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (!(e.ctrlKey || e.metaKey) || e.altKey || e.shiftKey) return;
-      const index = /^Digit([1-8])$/.exec(e.code)?.[1];
+      const index = /^Digit([1-7])$/.exec(e.code)?.[1];
       if (!index || searchOpenStore.get() || document.querySelector("[aria-modal='true']")) return;
       e.preventDefault();
       go(ORDER[Number(index) - 1]);
@@ -93,7 +86,6 @@ export function NavigationRail() {
           hint={`Ctrl+${i + 1}`}
           icon={icon}
           active={mode === value}
-          dot={value === "digest" && digestUnseen}
           onClick={() => go(value)}
         />
       ))}
