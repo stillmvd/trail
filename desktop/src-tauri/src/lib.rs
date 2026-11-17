@@ -125,13 +125,11 @@ fn disable_browser_accelerator_keys(window: &tauri::WebviewWindow) {
     use windows::core::Interface;
 
     let _ = window.with_webview(|webview| unsafe {
-        if let Ok(core) = webview.controller().CoreWebView2() {
-            if let Ok(settings) = core.Settings() {
-                if let Ok(s3) = settings.cast::<ICoreWebView2Settings3>() {
+        if let Ok(core) = webview.controller().CoreWebView2()
+            && let Ok(settings) = core.Settings()
+                && let Ok(s3) = settings.cast::<ICoreWebView2Settings3>() {
                     let _ = s3.SetAreBrowserAcceleratorKeysEnabled(false);
                 }
-            }
-        }
     });
 }
 
@@ -242,18 +240,33 @@ fn restore_backup(app: tauri::AppHandle, zip_path: String) -> Result<(), String>
         if name != "timeline.db" && !name.starts_with("media/") {
             continue;
         }
-        let out = data_dir.join(&rel);
+        let out = if name == "timeline.db" {
+            data_dir.join(PENDING_RESTORE)
+        } else {
+            data_dir.join(&rel)
+        };
         if let Some(parent) = out.parent() {
             fs::create_dir_all(parent).map_err(|e| e.to_string())?;
         }
         let mut dst = fs::File::create(&out).map_err(|e| e.to_string())?;
         std::io::copy(&mut entry, &mut dst).map_err(|e| e.to_string())?;
     }
-
-    // WAL/SHM от прежней БД противоречат восстановленному файлу.
-    let _ = fs::remove_file(data_dir.join("timeline.db-wal"));
-    let _ = fs::remove_file(data_dir.join("timeline.db-shm"));
     Ok(())
+}
+
+const PENDING_RESTORE: &str = "timeline.db.restore";
+
+fn apply_pending_restore(app: &tauri::App) {
+    let Ok(dir) = app.path().app_data_dir() else {
+        return;
+    };
+    let pending = dir.join(PENDING_RESTORE);
+    if !pending.is_file() {
+        return;
+    }
+    let _ = fs::remove_file(dir.join("timeline.db-wal"));
+    let _ = fs::remove_file(dir.join("timeline.db-shm"));
+    let _ = fs::rename(&pending, dir.join("timeline.db"));
 }
 
 #[cfg(windows)]
@@ -349,10 +362,8 @@ fn setup_tray(app: &tauri::App) -> tauri::Result<()> {
     use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
 
     let open = MenuItem::with_id(app, "open", "Открыть", true, None::<&str>)?;
-    let add_reminder =
-        MenuItem::with_id(app, "add_reminder", "Добавить напоминание", true, None::<&str>)?;
     let quit = MenuItem::with_id(app, "quit", "Выход", true, None::<&str>)?;
-    let menu = Menu::with_items(app, &[&open, &add_reminder, &quit])?;
+    let menu = Menu::with_items(app, &[&open, &quit])?;
 
     TrayIconBuilder::with_id("main")
         .icon(tray_image()?)
@@ -361,11 +372,6 @@ fn setup_tray(app: &tauri::App) -> tauri::Result<()> {
         .show_menu_on_left_click(false)
         .on_menu_event(|app, event| match event.id.as_ref() {
             "open" => show_main(app),
-            "add_reminder" => {
-                show_main(app);
-                use tauri::Emitter;
-                let _ = app.emit("add-reminder", ());
-            }
             "quit" => app.exit(0),
             _ => {}
         })
@@ -428,11 +434,10 @@ fn comfy_models_yaml() -> Option<std::path::PathBuf> {
 #[tauri::command]
 fn comfy_start(state: tauri::State<Comfy>, dir: String, port: u16) -> Result<(), String> {
     let mut slot = state.0.lock().map_err(|e| e.to_string())?;
-    if let Some(child) = slot.as_mut() {
-        if matches!(child.try_wait(), Ok(None)) {
+    if let Some(child) = slot.as_mut()
+        && matches!(child.try_wait(), Ok(None)) {
             return Ok(());
         }
-    }
     let root = std::path::Path::new(&dir);
     let python = root.join(".venv").join("Scripts").join("python.exe");
     if !python.exists() || !root.join("main.py").exists() {
@@ -486,12 +491,11 @@ fn comfy_stop(state: tauri::State<Comfy>, dir: String) -> Result<(), String> {
 }
 
 fn comfy_kill(state: &Comfy) {
-    if let Ok(mut slot) = state.0.lock() {
-        if let Some(mut child) = slot.take() {
+    if let Ok(mut slot) = state.0.lock()
+        && let Some(mut child) = slot.take() {
             let _ = child.kill();
             let _ = child.wait();
         }
-    }
 }
 
 fn window_flags() -> tauri_plugin_window_state::StateFlags {
@@ -553,6 +557,7 @@ pub fn run() {
         ])
         .setup(|app| {
             migrate_legacy_app_data(app);
+            apply_pending_restore(app);
             // TODO: удалить после 1.0 — превью удалённой «Сводки».
             if let Ok(dir) = app.path().app_data_dir() {
                 let _ = fs::remove_dir_all(dir.join("digest-cache"));
