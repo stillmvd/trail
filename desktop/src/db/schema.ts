@@ -73,30 +73,6 @@ CREATE TABLE IF NOT EXISTS people (
 );
 CREATE INDEX IF NOT EXISTS idx_people_birth ON people(birth_date);
 
--- Напоминания: самостоятельная сущность с временем, повторами и настройками уведомлений.
--- date — ближайшее срабатывание; у повторяющихся после «выполнено» переезжает на следующее вхождение.
-CREATE TABLE IF NOT EXISTS reminders (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  title TEXT NOT NULL,
-  note TEXT,
-  date TEXT NOT NULL,                              -- YYYY-MM-DD
-  time TEXT,                                       -- HH:MM, NULL = «в течение дня»
-  repeat TEXT NOT NULL DEFAULT 'none',             -- none|daily|weekly|monthly|yearly|custom
-  repeat_every INTEGER,                            -- шаг custom-повтора («каждые N»)
-  repeat_unit TEXT,                                -- day|week для custom
-  pre_notify_min INTEGER NOT NULL DEFAULT 0,       -- за сколько минут предупредить, 0 = выкл
-  nag INTEGER NOT NULL DEFAULT 0,                  -- 1 = повторять уведомление до выполнения
-  nag_interval_min INTEGER,
-  icon TEXT,
-  color TEXT,
-  event_id INTEGER REFERENCES events(id) ON DELETE SET NULL,
-  snoozed_until TEXT,                              -- YYYY-MM-DDTHH:MM
-  completed_at TEXT,                               -- NULL = активно (для повторяющихся всегда NULL)
-  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
-CREATE INDEX IF NOT EXISTS idx_reminders_date ON reminders(date);
-CREATE INDEX IF NOT EXISTS idx_reminders_event ON reminders(event_id);
-
 CREATE TABLE IF NOT EXISTS settings (
   key TEXT PRIMARY KEY,
   value TEXT NOT NULL

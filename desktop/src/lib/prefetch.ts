@@ -2,7 +2,6 @@ import { useEffect } from "react";
 import { prefetchQuery } from "./useQuery";
 import { listAllEvents, loadCalendar, loadTimeline } from "@/db/queries/loaders";
 import { listPeople } from "@/db/queries/people";
-import { listReminders } from "@/db/queries/reminders";
 
 async function warm() {
   await Promise.all([
@@ -10,7 +9,6 @@ async function warm() {
     prefetchQuery(loadTimeline),
     prefetchQuery(loadCalendar),
     prefetchQuery(listPeople),
-    prefetchQuery(listReminders),
   ]);
 }
 

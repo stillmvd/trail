@@ -1,7 +1,6 @@
 import { createElement, useState } from "react";
 import { differenceInCalendarDays, parseISO } from "date-fns";
-import { Bell, Pencil, Trash2 } from "lucide-react";
-import { useReminders } from "@/components/events/RemindersProvider";
+import { Pencil, Trash2 } from "lucide-react";
 import { SpanHero, TrackingTiles } from "@/components/tracking/TrackingParts";
 import { formatFullRu, formatDayMonthRu } from "@/lib/dates";
 import { elapsedSince, remainingUntil, formatYMD, isFuture, totalDaysCount } from "@/lib/duration";
@@ -10,7 +9,6 @@ import { eventAccent } from "@/lib/accent";
 import { resolveIconOrNull } from "@/lib/icons";
 import { mediaSrc } from "@/lib/paths";
 import { Button } from "@/components/ui/Button";
-import { IconButton } from "@/components/ui/IconButton";
 import { SignificanceIcon } from "@/components/ui/SignificanceIcon";
 import { MetricChip } from "@/components/ui/MetricChip";
 import { Lightbox } from "@/components/ui/Lightbox";
@@ -20,7 +18,6 @@ import { CoverPlaceholder } from "@/components/ui/CoverPlaceholder";
 import { EventForm, type EventFormPayload, type EventFormValues } from "./EventForm";
 import { MarkForm, type MarkFormPayload } from "./MarkForm";
 import { splitCategory } from "./CategoryPicker";
-import { reminderFromEvent } from "@/lib/reminders";
 import type { CategoryNode } from "@/db/queries/categories";
 import type { MarkType } from "@/db/queries/markTypes";
 import type { TimelineEvent } from "@/db/queries/events";
@@ -59,7 +56,6 @@ export function EventSheet({
 }: Props) {
   const [lbIndex, setLbIndex] = useState(-1);
   const [createKind, setCreateKind] = useState<"event" | "mark">("event");
-  const { openCreateReminder } = useReminders();
 
   const close = () => {
     setLbIndex(-1);
@@ -140,21 +136,10 @@ export function EventSheet({
                 <Trash2 size={16} strokeWidth={1.75} />
                 Удалить
               </Button>
-              <div className="flex items-center gap-2">
-                <IconButton
-                  label="Напомнить об этом событии"
-                  onClick={() => {
-                    close();
-                    openCreateReminder(reminderFromEvent(state.event));
-                  }}
-                >
-                  <Bell size={17} strokeWidth={1.75} />
-                </IconButton>
-                <Button variant="secondary" onClick={onStartEdit}>
-                  <Pencil size={16} strokeWidth={1.75} />
-                  Редактировать
-                </Button>
-              </div>
+              <Button variant="secondary" onClick={onStartEdit}>
+                <Pencil size={16} strokeWidth={1.75} />
+                Редактировать
+              </Button>
             </div>
           </div>
         )}
@@ -218,9 +203,7 @@ function EventView({
       </button>
 
       <div>
-        <h3 className="text-2xl font-bold leading-tight tracking-tight text-app-text">
-          {event.title}
-        </h3>
+        <h3 className="text-2xl font-bold leading-tight tracking-tight text-app-text">{event.title}</h3>
         <p className="mt-0.5 text-sm text-muted">{dateLabel}</p>
       </div>
 
@@ -249,9 +232,7 @@ function EventView({
       <TrackingTiles dateISO={event.date} />
 
       {event.description && (
-        <p className="whitespace-pre-wrap text-[15px] leading-relaxed text-app-text/90">
-          {event.description}
-        </p>
+        <p className="whitespace-pre-wrap text-[15px] leading-relaxed text-app-text/90">{event.description}</p>
       )}
     </div>
   );

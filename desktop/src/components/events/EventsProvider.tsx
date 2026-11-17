@@ -1,7 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { Bell, Pencil, Shapes, Sparkles, Target, Trash2 } from "lucide-react";
+import { Pencil, Shapes, Sparkles, Target, Trash2 } from "lucide-react";
 import { CategorySheet } from "@/components/timeline/CategoryPicker";
-import { reminderFromEvent } from "@/lib/reminders";
 import { searchOpenStore } from "@/lib/search";
 import { differenceInCalendarDays, parseISO } from "date-fns";
 import { useToast } from "@/components/ui/Toast";
@@ -10,7 +9,6 @@ import { ContextMenu, type ContextMenuItem } from "@/components/ui/ContextMenu";
 import { EventSheet, splitCategory, type EventSheetState } from "@/components/timeline/EventSheet";
 import { DayEventsDialog } from "@/components/timeline/DayEventsDialog";
 import { ImageGenDialog } from "@/components/timeline/ImageGenDialog";
-import { useReminders } from "./RemindersProvider";
 import { useEventSurface } from "./useEventSurface";
 import { mediaSrc } from "@/lib/paths";
 import { addDaysISO, formatDayMonthRu, formatFullRu, todayISO } from "@/lib/dates";
@@ -353,7 +351,6 @@ export function EventsProvider({ children }: { children: ReactNode }) {
     [show, patchDay],
   );
 
-  const { openCreateReminder } = useReminders();
   const [eventMenu, setEventMenu] = useState<{ event: TimelineEvent; x: number; y: number } | null>(null);
   const [genEvent, setGenEvent] = useState<TimelineEvent | null>(null);
   const [catEvent, setCatEvent] = useState<TimelineEvent | null>(null);
@@ -498,14 +495,6 @@ export function EventsProvider({ children }: { children: ReactNode }) {
       onSelect: () => {
         setDay(null);
         setCatEvent(event);
-      },
-    },
-    {
-      label: "Напомнить",
-      icon: <Bell size={16} strokeWidth={1.75} />,
-      onSelect: () => {
-        setDay(null);
-        openCreateReminder(reminderFromEvent(event));
       },
     },
     { type: "separator" },

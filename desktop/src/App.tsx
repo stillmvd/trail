@@ -5,7 +5,6 @@ import { NavigationRail } from "./components/nav/NavigationRail";
 import { ToastProvider } from "./components/ui/Toast";
 import { EventsProvider } from "./components/events/EventsProvider";
 import { PeopleProvider } from "./components/events/PeopleProvider";
-import { RemindersProvider } from "./components/events/RemindersProvider";
 import { SearchHost } from "./components/search/SearchHost";
 import { CreateFab } from "./components/nav/CreateFab";
 import { TooltipHost } from "./components/ui/Tooltip";
@@ -22,7 +21,6 @@ import { SettingsPage } from "./pages/SettingsPage";
 import { GalleryPage } from "./pages/GalleryPage";
 import { CalendarPage } from "./pages/CalendarPage";
 import { TrackingPage } from "./pages/TrackingPage";
-import { RemindersPage } from "./pages/RemindersPage";
 import { BirthdaysPage } from "./pages/BirthdaysPage";
 import { TimelinePage } from "./pages/TimelinePage";
 
@@ -31,7 +29,6 @@ const PAGES: Record<ViewMode, ComponentType> = {
   gallery: GalleryPage,
   calendar: CalendarPage,
   tracking: TrackingPage,
-  reminders: RemindersPage,
   birthdays: BirthdaysPage,
   settings: SettingsPage,
 };
@@ -53,31 +50,29 @@ export default function App() {
   return (
     <MotionConfig reducedMotion="user">
       <ToastProvider>
-        <RemindersProvider>
-          <EventsProvider>
-            <PeopleProvider>
-              <div className="flex h-screen flex-col bg-surface-0 text-app-text">
-                <Titlebar />
-                <div className="flex min-h-0 flex-1">
-                  <NavigationRail />
-                  <main className="min-h-0 flex-1 overflow-hidden">
-                    <Page />
-                  </main>
-                </div>
+        <EventsProvider>
+          <PeopleProvider>
+            <div className="flex h-screen flex-col bg-surface-0 text-app-text">
+              <Titlebar />
+              <div className="flex min-h-0 flex-1">
+                <NavigationRail />
+                <main className="min-h-0 flex-1 overflow-hidden">
+                  <Page />
+                </main>
               </div>
-              <SearchHost />
-              <CreateFab />
-              <TooltipHost />
-              <MediaOptimizer />
-              <UpdateToast lang="ru" />
-              {Agentation && (
-                <Suspense>
-                  <Agentation appName="Trail" endpoint="http://localhost:4747" />
-                </Suspense>
-              )}
-            </PeopleProvider>
-          </EventsProvider>
-        </RemindersProvider>
+            </div>
+            <SearchHost />
+            <CreateFab />
+            <TooltipHost />
+            <MediaOptimizer />
+            <UpdateToast lang="ru" />
+            {Agentation && (
+              <Suspense>
+                <Agentation appName="Trail" endpoint="http://localhost:4747" />
+              </Suspense>
+            )}
+          </PeopleProvider>
+        </EventsProvider>
       </ToastProvider>
     </MotionConfig>
   );
